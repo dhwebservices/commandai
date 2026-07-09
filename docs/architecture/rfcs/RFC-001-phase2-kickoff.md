@@ -1,5 +1,5 @@
 # RFC-001: Phase 2 Kickoff — Live Intent Pipeline
-Status: Draft
+Status: Accepted
 Author: CTO (Claude)
 Date: 2026-07-09
 
@@ -63,5 +63,12 @@ connects.
   under pressure.
 
 ## Decision
-Awaiting founder sign-off on: (1) NATS confirmation, (2) LLM provider
-adapter approach, (3) order of operations above.
+Accepted 2026-07-09. Founder approved all recommendations as written:
+1. NATS confirmed (ADR-005 updated to Accepted).
+2. LLM provider adapter interface built first; Anthropic API as first
+   concrete provider (packages/schema-defined contract, orchestrator
+   depends only on the interface).
+3. Agent<->cloud gRPC activation proceeds per the sequencing above, with
+   a dedicated Security.md pass on the auth/TLS scheme before any real
+   device connects — token-based auth scaffolded now, real device
+   enrollment flow is follow-up work, not blocking this RFC.

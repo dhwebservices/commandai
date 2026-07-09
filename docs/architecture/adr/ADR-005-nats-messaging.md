@@ -1,6 +1,6 @@
 # ADR-005: NATS over Kafka for messaging
-Status: Proposed — pending founder confirmation
-Date: 2026-07-09
+Status: Accepted
+Date: 2026-07-09 (confirmed 2026-07-09 via RFC-001)
 
 ## Context
 Need agent<->cloud and internal service messaging.
