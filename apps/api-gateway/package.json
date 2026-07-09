@@ -16,6 +16,7 @@
     "@commandai/logger": "workspace:*",
     "@commandai/config": "workspace:*",
     "@commandai/policy-engine": "workspace:*",
+    "@commandai/audit-service": "workspace:*",
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
