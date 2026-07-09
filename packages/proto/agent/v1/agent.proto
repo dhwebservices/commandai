@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package commandai.agent.v1;
+
+// Agent <-> Cloud protocol. Breaking changes to this file require an RFC
+// (see docs/architecture/RFC_PROCESS.md) and must pass buf breaking checks
+// against the last two released agent versions.
+
+message Intent {
+  string id = 1;
+  string tenant_id = 2;
+  string capability_id = 3;
+  string parameters_json = 4; // JSON-encoded, validated against Capability.parameterSchema
+  string reasoning = 5;
+  string requested_by = 6;
+  string created_at = 7;
+}
+
+message ActionStatus {
+  string action_id = 1;
+  string state = 2; // must match ActionState in packages/schema
+  string occurred_at = 3;
+}
+
+service AgentChannel {
+  // Cloud pushes an Intent for the agent to evaluate/execute.
+  rpc StreamIntents(stream Ack) returns (stream Intent);
+
+  // Agent pushes status/telemetry back to cloud.
+  rpc StreamStatus(stream ActionStatus) returns (stream Ack);
+}
+
+message Ack {
+  string ref_id = 1;
+  bool ok = 2;
+}

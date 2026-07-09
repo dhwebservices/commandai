@@ -1,0 +1,10 @@
+{
+  "name": "@commandai/proto",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "buf generate",
+    "lint": "buf lint",
+    "contract-test": "buf breaking --against '.git#branch=main,subdir=packages/proto'"
+  }
+}

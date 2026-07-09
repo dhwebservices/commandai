@@ -1,0 +1,15 @@
+{
+  "name": "@commandai/testing-utils",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@commandai/schema": "workspace:*"
+  }
+}
