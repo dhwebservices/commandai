@@ -26,3 +26,18 @@ Responses:
 
 No real agent dispatch yet — execution is simulated pending
 packages/proto gRPC wiring.
+
+## POST /v1/intents/confirm
+Completes the pause from `/v1/intents/evaluate` when
+`decision.requiresConfirmation` was true (Non-Negotiable #7). Re-evaluates
+the Intent against policy-engine again rather than trusting the client's
+memory of the earlier decision, since tenant policy could have changed in
+between.
+
+Request body: `{ intent: Intent, confirmedBy: string }`.
+
+Responses:
+- `{ executed: true, confirmedBy, auditTrail }` — executed and audited.
+- `400 VALIDATION_ERROR` — capability never required confirmation, or
+  `confirmedBy` missing.
+- `403 POLICY_DENIED` — denied on re-evaluation.
