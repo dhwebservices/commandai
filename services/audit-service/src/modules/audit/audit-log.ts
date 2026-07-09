@@ -8,6 +8,8 @@ import { InternalError } from "@commandai/errors";
  */
 export interface AuditWriter {
   append(event: AuditEvent): AuditEvent | Promise<AuditEvent>;
+  /** Optional: persists the Action row itself. No-op for backends (like in-memory) that don't track it separately. */
+  upsertAction?(action: ActionRecord): void | Promise<void>;
 }
 
 export interface AuditReader {

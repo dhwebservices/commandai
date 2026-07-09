@@ -53,6 +53,7 @@ export class IntentsController {
       throw new CapabilityNotFoundError("Invalid lifecycle transition for this action.");
     }
 
+    await this.auditLog.upsertAction?.(action);
     await recordTransition(this.auditLog, action, "Executed", intent.requestedBy, decision.reason);
     const executedAction: ActionRecord = { ...action, state: "Executed" };
     await recordTransition(this.auditLog, executedAction, "Audited", "system", "auto-audited (Phase 1)");

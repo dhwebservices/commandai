@@ -58,6 +58,7 @@ export class ConfirmIntentController {
       throw new CapabilityNotFoundError("Invalid lifecycle transition for this action.");
     }
 
+    await this.auditLog.upsertAction?.(action);
     await recordTransition(
       this.auditLog,
       action,

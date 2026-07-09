@@ -21,3 +21,9 @@ the request path.
 
 Subscribes to NATS lifecycle-transition events in Phase 2 (not wired yet —
 see ADR-005, pending confirmation).
+
+## upsertAction (added)
+`AuditWriter.upsertAction?` is optional on the interface — `SupabaseAuditLog`
+implements it (writes to the `actions` table), the in-memory `AuditLog`
+does not (no-op via optional chaining at call sites). This keeps the
+`actions` table populated in production without forcing test code to care.
