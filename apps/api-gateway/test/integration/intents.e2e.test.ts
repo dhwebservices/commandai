@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { IntentsController } from "../../src/modules/intents/intents.controller";
+import { inMemoryAuditLog } from "../../src/modules/intents/audit-log.provider";
 import { PolicyDeniedError } from "@commandai/errors";
 
 function makeIntentBody(capabilityId: string, reasoning = "User asked to check disk space.") {
@@ -16,7 +17,7 @@ function makeIntentBody(capabilityId: string, reasoning = "User asked to check d
 
 describe("Intent evaluation end-to-end", () => {
   it("evaluates a read-capability Intent, executes, and audits it", async () => {
-    const controller = new IntentsController();
+    const controller = new IntentsController(inMemoryAuditLog());
     const result = await controller.evaluate(makeIntentBody("system.disk.read_usage"));
 
     expect(result.decision.allowed).toBe(true);
@@ -26,7 +27,7 @@ describe("Intent evaluation end-to-end", () => {
   });
 
   it("pauses execution for a destructive capability pending confirmation", async () => {
-    const controller = new IntentsController();
+    const controller = new IntentsController(inMemoryAuditLog());
     const result = await controller.evaluate(
       makeIntentBody("system.file.delete", "User asked to delete a temp file."),
     );
@@ -37,14 +38,14 @@ describe("Intent evaluation end-to-end", () => {
   });
 
   it("denies and throws PolicyDeniedError when reasoning is missing", async () => {
-    const controller = new IntentsController();
+    const controller = new IntentsController(inMemoryAuditLog());
     await expect(
       controller.evaluate(makeIntentBody("system.disk.read_usage", "")),
     ).rejects.toThrow(Error);
   });
 
   it("throws CapabilityNotFoundError for an unregistered capability", async () => {
-    const controller = new IntentsController();
+    const controller = new IntentsController(inMemoryAuditLog());
     await expect(controller.evaluate(makeIntentBody("nonexistent.capability"))).rejects.toThrow();
   });
 });

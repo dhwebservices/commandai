@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { ConfirmIntentController } from "../../src/modules/intents/confirm-intent.controller";
+import { inMemoryAuditLog } from "../../src/modules/intents/audit-log.provider";
 
 function makeConfirmBody(capabilityId: string, confirmedBy = "user-123") {
   return {
@@ -18,7 +19,7 @@ function makeConfirmBody(capabilityId: string, confirmedBy = "user-123") {
 
 describe("Confirmation endpoint", () => {
   it("executes and audits a destructive capability once confirmed", async () => {
-    const controller = new ConfirmIntentController();
+    const controller = new ConfirmIntentController(inMemoryAuditLog());
     const result = await controller.confirm(makeConfirmBody("system.file.delete"));
 
     expect(result.executed).toBe(true);
@@ -28,12 +29,12 @@ describe("Confirmation endpoint", () => {
   });
 
   it("rejects confirmation for a capability that never required it", async () => {
-    const controller = new ConfirmIntentController();
+    const controller = new ConfirmIntentController(inMemoryAuditLog());
     await expect(controller.confirm(makeConfirmBody("system.disk.read_usage"))).rejects.toThrow();
   });
 
   it("requires confirmedBy to be present", async () => {
-    const controller = new ConfirmIntentController();
+    const controller = new ConfirmIntentController(inMemoryAuditLog());
     const body = makeConfirmBody("system.file.delete", "");
     await expect(controller.confirm(body)).rejects.toThrow();
   });

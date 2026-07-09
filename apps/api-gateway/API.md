@@ -25,7 +25,9 @@ Responses:
 - `404 CAPABILITY_NOT_FOUND` — unregistered capability id.
 
 No real agent dispatch yet — execution is simulated pending
-packages/proto gRPC wiring.
+packages/proto gRPC wiring. Audit log is DI-injected (AUDIT_LOG token,
+apps/api-gateway/src/modules/intents/audit-log.provider.ts) — Supabase-backed
+in the running app (ADR-009), in-memory in tests.
 
 ## POST /v1/intents/confirm
 Completes the pause from `/v1/intents/evaluate` when

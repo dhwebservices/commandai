@@ -2,12 +2,13 @@
 
 Phase 1: in-memory `AuditLog` (append-only, no update/delete methods
 exposed) remains the default for tests and local single-instance use.
-`PostgresAuditLog` (postgres-audit-log.ts) is now also available — same
-`append`/`forAction` shape via the `AuditWriter`/`AuditReader` interfaces,
-so `recordTransition`/`findExecutedWithoutAudit` work against either
-without callers caring which. Writes/reads go through
-`withTenantContext` (packages/db) so RLS applies (Phase 2: audit-service
-switches to this by default once deployed as a real, shared service).
+`SupabaseAuditLog` (supabase-audit-log.ts) is the **production default**
+as of ADR-009 — api-gateway's IntentsModule provides it via the `AUDIT_LOG`
+injection token, using the service-role Supabase client. `PostgresAuditLog`
+(raw pg against local Postgres) is deprecated (see packages/db/DEPRECATED.md)
+and kept only for reference. All three implement the same
+`AuditWriter`/`AuditReader` shape, so `recordTransition`/
+`findExecutedWithoutAudit` work against any of them unchanged.
 
 `recordTransition` refuses (throws) rather than logs an invalid state
 transition — see packages/schema `isValidTransition`.

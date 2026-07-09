@@ -1,9 +1,10 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, Inject, Post } from "@nestjs/common";
 import { Intent as IntentSchema, isValidTransition, type ActionRecord } from "@commandai/schema";
 import { evaluateIntent, assertAllowed } from "@commandai/policy-engine";
 import { CapabilityNotFoundError } from "@commandai/errors";
-import { AuditLog, recordTransition } from "@commandai/audit-service";
+import { recordTransition } from "@commandai/audit-service";
 import { findCapability } from "./capability-registry";
+import { AUDIT_LOG, type AuditLogPort } from "./audit-log.provider";
 
 /**
  * End-to-end Phase 1 wiring: orchestrator drafts an Intent -> this endpoint
@@ -11,13 +12,12 @@ import { findCapability } from "./capability-registry";
  * enforcement point, Non-Negotiable #2) -> on unconditional allow, a Phase-1
  * simulated execution is recorded through the Action lifecycle and audited.
  * No real agent dispatch yet — that requires packages/proto wiring, tracked
- * separately.
+ * separately. Audit log is injected (AUDIT_LOG token) — Supabase-backed in
+ * production (ADR-009), in-memory in tests, no code here cares which.
  */
 @Controller({ path: "intents", version: "1" })
 export class IntentsController {
-  // Phase 1: process-local audit log. Phase 2: backed by Postgres, shared
-  // across instances (see services/audit-service Architecture.md).
-  private readonly auditLog = new AuditLog();
+  constructor(@Inject(AUDIT_LOG) private readonly auditLog: AuditLogPort) {}
 
   @Post("evaluate")
   async evaluate(@Body() body: unknown) {
@@ -60,7 +60,7 @@ export class IntentsController {
     return {
       decision,
       executed: true,
-      auditTrail: this.auditLog.forAction(intent.id),
+      auditTrail: await this.auditLog.forAction(intent.id),
     };
   }
 }

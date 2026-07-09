@@ -1,10 +1,11 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, Inject, Post } from "@nestjs/common";
 import { z } from "zod";
 import { Intent as IntentSchema, isValidTransition, type ActionRecord } from "@commandai/schema";
 import { evaluateIntent, assertAllowed } from "@commandai/policy-engine";
 import { CapabilityNotFoundError, ValidationError } from "@commandai/errors";
-import { AuditLog, recordTransition } from "@commandai/audit-service";
+import { recordTransition } from "@commandai/audit-service";
 import { findCapability } from "./capability-registry";
+import { AUDIT_LOG, type AuditLogPort } from "./audit-log.provider";
 
 /**
  * Completes the path IntentsController.evaluate() pauses on: a destructive
@@ -21,7 +22,7 @@ const ConfirmRequest = z.object({
 
 @Controller({ path: "intents", version: "1" })
 export class ConfirmIntentController {
-  private readonly auditLog = new AuditLog();
+  constructor(@Inject(AUDIT_LOG) private readonly auditLog: AuditLogPort) {}
 
   @Post("confirm")
   async confirm(@Body() body: unknown) {
@@ -70,7 +71,7 @@ export class ConfirmIntentController {
     return {
       executed: true,
       confirmedBy,
-      auditTrail: this.auditLog.forAction(intent.id),
+      auditTrail: await this.auditLog.forAction(intent.id),
     };
   }
 }
