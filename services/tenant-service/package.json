@@ -11,8 +11,7 @@
   "dependencies": {
     "@commandai/schema": "workspace:*",
     "@commandai/errors": "workspace:*",
-    "@commandai/db": "workspace:*",
-    "pg": "^8.12.0",
+    "@supabase/supabase-js": "^2.45.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

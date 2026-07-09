@@ -1,10 +1,9 @@
 # Examples
 
 ```ts
-import { Tenant, isHomeTenant } from "@commandai/tenant-service";
+import { TenantRepository } from "@commandai/tenant-service";
+import { createSupabaseAdminClient } from "../../api-gateway/src/modules/auth/supabase-admin.client";
 
-const tenant = Tenant.parse(rawRecord);
-if (isHomeTenant(tenant)) {
-  // same code path as any other tenant — no special-casing
-}
+const repo = new TenantRepository(supabaseAdminClient);
+const tenant = await repo.findById(tenantId);
 ```

@@ -1,12 +1,8 @@
 # API
 
-Phase 1: model + validation only (`Tenant`, `TenantMember`, `isHomeTenant`,
-`assertHasOwner`). No HTTP/gRPC surface yet — persistence and API layer
-tracked for the next milestone once api-gateway exists.
-
-## TenantRepository (added)
-- `create(tenant) -> Tenant`
 - `findById(tenantId) -> Tenant | null`
+- `updateBlockedCapabilities(tenantId, ids) -> void`
+- `addMember(tenantId, profileId, role) -> void` (Phase 2 invite flow entry point)
 
-Still no HTTP/gRPC surface — consumed as a library by api-gateway when
-tenant-aware endpoints are added.
+No `create()` here — see auth.service.ts signup flow (ADR-009).
+No HTTP/gRPC surface yet — consumed as a library by api-gateway.

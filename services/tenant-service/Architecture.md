@@ -1,17 +1,16 @@
 # Architecture
 
 Single `Tenant` shape for every tier (home/business/msp/msp_client/
-enterprise). MSPs relate to client tenants via `parentTenantId`, not a
-separate data model. Every tenant has >=1 member with role `owner`,
-enforced at the schema level (`members.min(1)`) and re-checked via
-`assertHasOwner`.
+enterprise). Per ADR-009, persistence is Supabase (project "command-ai"),
+not local Postgres — `TenantRepository` uses supabase-js, matching the
+pattern in apps/api-gateway/src/modules/auth.
 
-Postgres row-level security will enforce `tenant_id` isolation at the DB
-layer (Phase 2 — not yet wired, this package currently defines the model
-only, no persistence layer).
+Tenant *creation* happens in auth.service.ts's signup flow (tenant +
+owner profile created together) — TenantRepository does not duplicate
+creation, it's read/management only (findById, updateBlockedCapabilities,
+addMember for future invite flows).
 
-## Repository (added)
-`TenantRepository` (tenant.repository.ts) is now the persistence layer —
-`create`/`findById`, both going through `withTenantContext` for RLS. Every
-write path re-checks `assertHasOwner` at the application layer in addition
-to the DB trigger — defense in depth, not either/or.
+"Members" are derived from `profiles` rows (tenant_id FK) — there's no
+separate tenant_members table in the Supabase schema; one profile per
+user already carries tenant_id + role. `assertHasOwner` is re-checked
+after any membership change in `addMember`.
