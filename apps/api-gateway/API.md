@@ -41,3 +41,26 @@ Responses:
 - `400 VALIDATION_ERROR` — capability never required confirmation, or
   `confirmedBy` missing.
 - `403 POLICY_DENIED` — denied on re-evaluation.
+
+## Auth (ADR-009, see modules/auth/AUTH_DESIGN.md for full flow)
+
+### POST /v1/auth/signup
+`{ username, contactEmail, password }` -> creates a home tenant (owner),
+a Supabase Auth user (synthetic email internally), a profile, and sends a
+verification email via Resend. Returns `{ userId, tenantId }`.
+
+### POST /v1/auth/login
+`{ username, password }` -> `{ accessToken, refreshToken, userId }`.
+Generic `400 VALIDATION_ERROR` ("Invalid username or password.") for any
+failure — no signal on which part was wrong.
+
+### POST /v1/auth/verify-email
+`{ token }` -> `{ verified: true }`. 400 if token invalid/expired/consumed.
+
+### POST /v1/auth/request-password-reset
+`{ username }` -> always `{ requested: true }` regardless of whether the
+username exists (enumeration protection). Sends a reset email only if it does.
+
+### POST /v1/auth/reset-password
+`{ token, newPassword }` -> `{ reset: true }`. 400 if token
+invalid/expired/consumed.

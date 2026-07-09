@@ -10,3 +10,4 @@
 | 006 | Action lifecycle state machine | Accepted |
 | 007 | gRPC/protobuf for agent<->cloud protocol | Accepted |
 | 008 | Explicit SQL migrations over an ORM | Accepted |
+| 009 | Supabase for Postgres + Auth | Accepted (founder-directed) |
