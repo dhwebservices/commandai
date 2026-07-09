@@ -3,6 +3,18 @@ import { isValidTransition } from "@commandai/schema";
 import { InternalError } from "@commandai/errors";
 
 /**
+ * Shape both AuditLog (in-memory) and PostgresAuditLog implement, so
+ * recordTransition works against either without callers caring which.
+ */
+export interface AuditWriter {
+  append(event: AuditEvent): AuditEvent | Promise<AuditEvent>;
+}
+
+export interface AuditReader {
+  forAction(actionId: string, tenantId?: string): AuditEvent[] | Promise<AuditEvent[]>;
+}
+
+/**
  * In-memory append-only store. Phase 1 stub — Phase 2 backs this with
  * Postgres (append-only table, no UPDATE/DELETE grants at the DB role
  * level). See Non-Negotiable #6: every Action must be auditable.
@@ -29,13 +41,13 @@ export class AuditLog {
  * invalid — audit-service does not silently log an impossible state
  * change, it refuses to (Non-Negotiable #6: auditable, not just logged).
  */
-export function recordTransition(
-  log: AuditLog,
+export async function recordTransition(
+  log: AuditWriter,
   action: ActionRecord,
   toState: ActionState,
   actorId: string,
   reasoning?: string,
-): AuditEvent {
+): Promise<AuditEvent> {
   if (!isValidTransition(action.state, toState)) {
     throw new InternalError(
       `Invalid transition from "${action.state}" to "${toState}" for action ${action.id}.`,
@@ -60,13 +72,17 @@ export function recordTransition(
  * partition during the audit write). Used by a monitoring job, not by the
  * request path itself.
  */
-export function findExecutedWithoutAudit(
+export async function findExecutedWithoutAudit(
   actions: ActionRecord[],
-  log: AuditLog,
-): ActionRecord[] {
-  return actions.filter((action) => {
-    if (action.state !== "Executed") return false;
-    const events = log.forAction(action.id);
-    return !events.some((e) => e.toState === "Audited");
-  });
+  log: AuditReader,
+): Promise<ActionRecord[]> {
+  const results: ActionRecord[] = [];
+  for (const action of actions) {
+    if (action.state !== "Executed") continue;
+    const events = await log.forAction(action.id);
+    if (!events.some((e) => e.toState === "Audited")) {
+      results.push(action);
+    }
+  }
+  return results;
 }

@@ -1,9 +1,13 @@
 # Architecture
 
 Phase 1: in-memory `AuditLog` (append-only, no update/delete methods
-exposed). Phase 2: backed by Postgres append-only table — DB role for this
-service will not have UPDATE/DELETE grants at all, enforced at the
-database level, not just application code.
+exposed) remains the default for tests and local single-instance use.
+`PostgresAuditLog` (postgres-audit-log.ts) is now also available — same
+`append`/`forAction` shape via the `AuditWriter`/`AuditReader` interfaces,
+so `recordTransition`/`findExecutedWithoutAudit` work against either
+without callers caring which. Writes/reads go through
+`withTenantContext` (packages/db) so RLS applies (Phase 2: audit-service
+switches to this by default once deployed as a real, shared service).
 
 `recordTransition` refuses (throws) rather than logs an invalid state
 transition — see packages/schema `isValidTransition`.

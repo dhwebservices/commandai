@@ -14,34 +14,34 @@ function makeAction(state: ActionRecord["state"] = "Installed"): ActionRecord {
 }
 
 describe("recordTransition", () => {
-  it("records a valid transition", () => {
+  it("records a valid transition", async () => {
     const log = new AuditLog();
     const action = makeAction("Installed");
-    const event = recordTransition(log, action, "Executed", "agent-1", "scheduled run");
+    const event = await recordTransition(log, action, "Executed", "agent-1", "scheduled run");
     expect(event.toState).toBe("Executed");
     expect(log.forAction(action.id)).toHaveLength(1);
   });
 
-  it("refuses to log an invalid transition", () => {
+  it("refuses to log an invalid transition", async () => {
     const log = new AuditLog();
     const action = makeAction("Draft");
-    expect(() => recordTransition(log, action, "Published", "user-1")).toThrow();
+    await expect(recordTransition(log, action, "Published", "user-1")).rejects.toThrow();
   });
 });
 
 describe("findExecutedWithoutAudit", () => {
-  it("flags an Executed action with no Audited event (ADR-006 gap detection)", () => {
+  it("flags an Executed action with no Audited event (ADR-006 gap detection)", async () => {
     const log = new AuditLog();
     const action = makeAction("Executed");
-    const gaps = findExecutedWithoutAudit([action], log);
+    const gaps = await findExecutedWithoutAudit([action], log);
     expect(gaps).toHaveLength(1);
   });
 
-  it("does not flag an action once Audited is recorded", () => {
+  it("does not flag an action once Audited is recorded", async () => {
     const log = new AuditLog();
     const action = makeAction("Executed");
-    recordTransition(log, action, "Audited", "system");
-    const gaps = findExecutedWithoutAudit([action], log);
+    await recordTransition(log, action, "Audited", "system");
+    const gaps = await findExecutedWithoutAudit([action], log);
     expect(gaps).toHaveLength(0);
   });
 });

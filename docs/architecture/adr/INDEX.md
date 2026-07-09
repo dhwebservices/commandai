@@ -9,3 +9,4 @@
 | 005 | NATS over Kafka for messaging | Proposed — pending confirmation |
 | 006 | Action lifecycle state machine | Accepted |
 | 007 | gRPC/protobuf for agent<->cloud protocol | Accepted |
+| 008 | Explicit SQL migrations over an ORM | Accepted |

@@ -15,9 +15,9 @@ function makeIntentBody(capabilityId: string, reasoning = "User asked to check d
 }
 
 describe("Intent evaluation end-to-end", () => {
-  it("evaluates a read-capability Intent, executes, and audits it", () => {
+  it("evaluates a read-capability Intent, executes, and audits it", async () => {
     const controller = new IntentsController();
-    const result = controller.evaluate(makeIntentBody("system.disk.read_usage"));
+    const result = await controller.evaluate(makeIntentBody("system.disk.read_usage"));
 
     expect(result.decision.allowed).toBe(true);
     expect(result.executed).toBe(true);
@@ -25,9 +25,9 @@ describe("Intent evaluation end-to-end", () => {
     expect(result.auditTrail[1].toState).toBe("Audited");
   });
 
-  it("pauses execution for a destructive capability pending confirmation", () => {
+  it("pauses execution for a destructive capability pending confirmation", async () => {
     const controller = new IntentsController();
-    const result = controller.evaluate(
+    const result = await controller.evaluate(
       makeIntentBody("system.file.delete", "User asked to delete a temp file."),
     );
 
@@ -36,16 +36,15 @@ describe("Intent evaluation end-to-end", () => {
     expect(result.executed).toBe(false);
   });
 
-  it("denies and throws PolicyDeniedError when reasoning is missing", () => {
+  it("denies and throws PolicyDeniedError when reasoning is missing", async () => {
     const controller = new IntentsController();
-    expect(() => controller.evaluate(makeIntentBody("system.disk.read_usage", ""))).toThrow(
-      // zod will actually reject empty reasoning at schema level before policy-engine sees it
-      Error,
-    );
+    await expect(
+      controller.evaluate(makeIntentBody("system.disk.read_usage", "")),
+    ).rejects.toThrow(Error);
   });
 
-  it("throws CapabilityNotFoundError for an unregistered capability", () => {
+  it("throws CapabilityNotFoundError for an unregistered capability", async () => {
     const controller = new IntentsController();
-    expect(() => controller.evaluate(makeIntentBody("nonexistent.capability"))).toThrow();
+    await expect(controller.evaluate(makeIntentBody("nonexistent.capability"))).rejects.toThrow();
   });
 });

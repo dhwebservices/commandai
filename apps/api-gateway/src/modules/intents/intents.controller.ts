@@ -20,7 +20,7 @@ export class IntentsController {
   private readonly auditLog = new AuditLog();
 
   @Post("evaluate")
-  evaluate(@Body() body: unknown) {
+  async evaluate(@Body() body: unknown) {
     const intent = IntentSchema.parse(body);
 
     const capability = findCapability(intent.capabilityId);
@@ -53,9 +53,9 @@ export class IntentsController {
       throw new CapabilityNotFoundError("Invalid lifecycle transition for this action.");
     }
 
-    recordTransition(this.auditLog, action, "Executed", intent.requestedBy, decision.reason);
+    await recordTransition(this.auditLog, action, "Executed", intent.requestedBy, decision.reason);
     const executedAction: ActionRecord = { ...action, state: "Executed" };
-    recordTransition(this.auditLog, executedAction, "Audited", "system", "auto-audited (Phase 1)");
+    await recordTransition(this.auditLog, executedAction, "Audited", "system", "auto-audited (Phase 1)");
 
     return {
       decision,
