@@ -37,6 +37,42 @@ jobs:
       - name: Audit (npm)
         run: pnpm audit --audit-level=high || true
 
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: commandai
+          POSTGRES_USER: commandai
+          POSTGRES_PASSWORD: commandai_local
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U commandai"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Apply migrations to a fresh database
+        env:
+          NODE_ENV: test
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: commandai
+          POSTGRES_USER: commandai
+          POSTGRES_PASSWORD: commandai_local
+        run: pnpm db:migrate
+
   contract-tests:
     runs-on: ubuntu-latest
     needs: ci

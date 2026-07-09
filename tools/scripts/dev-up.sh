@@ -17,4 +17,6 @@ until docker compose -f infra/docker/docker-compose.dev.yml exec -T postgres pg_
 done
 
 echo "Dev stack up: postgres:5432 redis:6379 nats:4222"
+echo "Running database migrations..."
+pnpm db:migrate
 echo "Run 'pnpm dev' to start app services."
