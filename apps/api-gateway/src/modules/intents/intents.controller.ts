@@ -1,10 +1,12 @@
-import { Body, Controller, Inject, Post } from "@nestjs/common";
+import { Body, Controller, Inject, Post, Optional } from "@nestjs/common";
+import type { NatsConnection } from "nats";
 import { Intent as IntentSchema, isValidTransition, type ActionRecord } from "@commandai/schema";
 import { evaluateIntent, assertAllowed } from "@commandai/policy-engine";
 import { CapabilityNotFoundError } from "@commandai/errors";
-import { recordTransition } from "@commandai/audit-service";
+import { recordTransition, publishTransition } from "@commandai/audit-service";
 import { findCapability } from "./capability-registry";
 import { AUDIT_LOG, type AuditLogPort } from "./audit-log.provider";
+import { NATS_CONNECTION } from "./nats-connection.provider";
 
 /**
  * End-to-end Phase 1 wiring: orchestrator drafts an Intent -> this endpoint
@@ -17,7 +19,21 @@ import { AUDIT_LOG, type AuditLogPort } from "./audit-log.provider";
  */
 @Controller({ path: "intents", version: "1" })
 export class IntentsController {
-  constructor(@Inject(AUDIT_LOG) private readonly auditLog: AuditLogPort) {}
+  constructor(
+    @Inject(AUDIT_LOG) private readonly auditLog: AuditLogPort,
+    @Optional() @Inject(NATS_CONNECTION) private readonly nc: NatsConnection | null = null,
+  ) {}
+
+  /** Best-effort publish — a NATS outage must never fail the request (Architecture Principle #5). */
+  private async publishBestEffort(event: Awaited<ReturnType<typeof recordTransition>>) {
+    if (!this.nc) return;
+    try {
+      await publishTransition(this.nc, event);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("Failed to publish transition event to NATS.", err);
+    }
+  }
 
   @Post("evaluate")
   async evaluate(@Body() body: unknown) {
@@ -54,9 +70,24 @@ export class IntentsController {
     }
 
     await this.auditLog.upsertAction?.(action);
-    await recordTransition(this.auditLog, action, "Executed", intent.requestedBy, decision.reason);
+    const executedEvent = await recordTransition(
+      this.auditLog,
+      action,
+      "Executed",
+      intent.requestedBy,
+      decision.reason,
+    );
+    await this.publishBestEffort(executedEvent);
+
     const executedAction: ActionRecord = { ...action, state: "Executed" };
-    await recordTransition(this.auditLog, executedAction, "Audited", "system", "auto-audited (Phase 1)");
+    const auditedEvent = await recordTransition(
+      this.auditLog,
+      executedAction,
+      "Audited",
+      "system",
+      "auto-audited (Phase 1)",
+    );
+    await this.publishBestEffort(auditedEvent);
 
     return {
       decision,

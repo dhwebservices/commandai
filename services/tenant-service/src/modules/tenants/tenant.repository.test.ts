@@ -48,3 +48,58 @@ describe("TenantRepository.findById", () => {
     expect(tenant).toBeNull();
   });
 });
+
+describe("TenantRepository.updateBlockedCapabilities", () => {
+  it("narrows the tenant's blocked capability list", async () => {
+    const tenantsBuilder: any = {
+      update: vi.fn(() => tenantsBuilder),
+      eq: vi.fn(async () => ({ error: null })),
+    };
+    const supabase = { from: vi.fn(() => tenantsBuilder) };
+
+    const repo = new TenantRepository(supabase as any);
+    await expect(
+      repo.updateBlockedCapabilities("tenant-1", ["system.file.delete"]),
+    ).resolves.toBeUndefined();
+    expect(tenantsBuilder.update).toHaveBeenCalledWith({
+      blocked_capability_ids: ["system.file.delete"],
+    });
+  });
+
+  it("throws InternalError if the update fails", async () => {
+    const tenantsBuilder: any = {
+      update: vi.fn(() => tenantsBuilder),
+      eq: vi.fn(async () => ({ error: new Error("db error") })),
+    };
+    const supabase = { from: vi.fn(() => tenantsBuilder) };
+    const repo = new TenantRepository(supabase as any);
+
+    await expect(repo.updateBlockedCapabilities("tenant-1", [])).rejects.toThrow();
+  });
+});
+
+describe("TenantRepository.addMember", () => {
+  it("adds a member and re-checks the owner invariant", async () => {
+    const supabase = makeSupabaseMock(
+      {
+        id: "tenant-1",
+        name: "Acme",
+        type: "business",
+        parent_tenant_id: null,
+        blocked_capability_ids: [],
+        created_at: new Date().toISOString(),
+      },
+      [{ id: "owner-1", role: "owner", created_at: new Date().toISOString() }],
+    );
+    const repo = new TenantRepository(supabase as any);
+
+    await expect(repo.addMember("tenant-1", "member-2", "member")).resolves.toBeUndefined();
+  });
+
+  it("throws if the tenant does not exist", async () => {
+    const supabase = makeSupabaseMock(null, []);
+    const repo = new TenantRepository(supabase as any);
+
+    await expect(repo.addMember("nonexistent", "member-2", "member")).rejects.toThrow();
+  });
+});

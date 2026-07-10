@@ -1,11 +1,13 @@
-import { Body, Controller, Inject, Post } from "@nestjs/common";
+import { Body, Controller, Inject, Post, Optional } from "@nestjs/common";
+import type { NatsConnection } from "nats";
 import { z } from "zod";
 import { Intent as IntentSchema, isValidTransition, type ActionRecord } from "@commandai/schema";
 import { evaluateIntent, assertAllowed } from "@commandai/policy-engine";
 import { CapabilityNotFoundError, ValidationError } from "@commandai/errors";
-import { recordTransition } from "@commandai/audit-service";
+import { recordTransition, publishTransition } from "@commandai/audit-service";
 import { findCapability } from "./capability-registry";
 import { AUDIT_LOG, type AuditLogPort } from "./audit-log.provider";
+import { NATS_CONNECTION } from "./nats-connection.provider";
 
 /**
  * Completes the path IntentsController.evaluate() pauses on: a destructive
@@ -22,7 +24,20 @@ const ConfirmRequest = z.object({
 
 @Controller({ path: "intents", version: "1" })
 export class ConfirmIntentController {
-  constructor(@Inject(AUDIT_LOG) private readonly auditLog: AuditLogPort) {}
+  constructor(
+    @Inject(AUDIT_LOG) private readonly auditLog: AuditLogPort,
+    @Optional() @Inject(NATS_CONNECTION) private readonly nc: NatsConnection | null = null,
+  ) {}
+
+  private async publishBestEffort(event: Awaited<ReturnType<typeof recordTransition>>) {
+    if (!this.nc) return;
+    try {
+      await publishTransition(this.nc, event);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("Failed to publish transition event to NATS.", err);
+    }
+  }
 
   @Post("confirm")
   async confirm(@Body() body: unknown) {
@@ -59,15 +74,24 @@ export class ConfirmIntentController {
     }
 
     await this.auditLog.upsertAction?.(action);
-    await recordTransition(
+    const executedEvent = await recordTransition(
       this.auditLog,
       action,
       "Executed",
       confirmedBy,
       `Confirmed destructive action: ${decision.reason}`,
     );
+    await this.publishBestEffort(executedEvent);
+
     const executedAction: ActionRecord = { ...action, state: "Executed" };
-    await recordTransition(this.auditLog, executedAction, "Audited", "system", "auto-audited (Phase 1)");
+    const auditedEvent = await recordTransition(
+      this.auditLog,
+      executedAction,
+      "Audited",
+      "system",
+      "auto-audited (Phase 1)",
+    );
+    await this.publishBestEffort(auditedEvent);
 
     return {
       executed: true,

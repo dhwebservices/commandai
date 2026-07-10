@@ -27,3 +27,12 @@ see ADR-005, pending confirmation).
 implements it (writes to the `actions` table), the in-memory `AuditLog`
 does not (no-op via optional chaining at call sites). This keeps the
 `actions` table populated in production without forcing test code to care.
+
+## NATS wiring (now connected)
+apps/api-gateway now actually calls `publishTransition` after each
+`recordTransition` (both intents.controller.ts and
+confirm-intent.controller.ts), via a best-effort NATS connection
+(NATS_CONNECTION token, apps/api-gateway/src/modules/intents/nats-connection.provider.ts).
+A NATS outage never fails the request — it's a real-time notification
+channel, not the audit-of-record (the DB write already succeeded by the
+time we'd publish). Previously this transport existed but nothing called it.
