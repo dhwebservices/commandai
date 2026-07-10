@@ -11,3 +11,4 @@
 | 007 | gRPC/protobuf for agent<->cloud protocol | Accepted |
 | 008 | Explicit SQL migrations over an ORM | Accepted |
 | 009 | Supabase for Postgres + Auth | Accepted (founder-directed) |
+| 010 | agent-gateway service for AgentChannel gRPC | Accepted (structural only, not production-cleared) |

@@ -1,7 +1,8 @@
 # Module Documentation Standard
 
 ## Trust-critical modules
-`policy-engine`, `packages/schema`, agent `capabilities/*`, `tenant-service`, auth.
+`policy-engine`, `packages/schema`, agent `capabilities/*`, `tenant-service`, auth,
+`agent-gateway` (added ADR-010 — network-exposed side of the agent trust boundary).
 
 Required from first commit:
 - README.md
