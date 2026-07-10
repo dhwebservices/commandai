@@ -7,6 +7,7 @@ adapter class, not touching call sites.
 
 from abc import ABC, abstractmethod
 from pydantic import BaseModel
+from app.intents.models import Capability
 
 
 class DraftedIntentPlan(BaseModel):
@@ -22,8 +23,17 @@ class DraftedIntentPlan(BaseModel):
 
 class LLMProvider(ABC):
     @abstractmethod
-    async def draft_intent_plan(self, user_request: str, tenant_id: str) -> DraftedIntentPlan:
+    async def draft_intent_plan(
+        self,
+        user_request: str,
+        tenant_id: str,
+        capability_catalog: list[Capability],
+    ) -> DraftedIntentPlan:
         """Turns a natural-language request into a proposed Intent plan.
-        Must never return anything resembling a shell command or raw code —
-        only a capability_id + structured parameters."""
+        `capability_catalog` is the tenant's actual registered capabilities
+        — implementations must constrain the model to select only from
+        this list (e.g. via tool-calling with an enum), never accept a
+        free-text capability_id. Must never return anything resembling a
+        shell command or raw code — only a capability_id + structured
+        parameters."""
         raise NotImplementedError

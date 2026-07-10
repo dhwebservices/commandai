@@ -16,3 +16,12 @@ interface. `app/llm/anthropic_provider.py` is the first concrete
 implementation — fails fast without `ANTHROPIC_API_KEY`, real API call
 not yet wired (needs tenant-scoped Capability catalog as tool
 definitions first).
+
+## Real LLM wiring (RFC-001, now live)
+`AnthropicProvider.draft_intent_plan` makes a real `anthropic.messages.create`
+call, using tool-calling with `capability_id` constrained to an enum of the
+tenant's actual registered capabilities — the model cannot select or
+invent anything outside that list. Two layers of defense: the tool
+schema's enum, and an explicit re-check against the catalog after the
+response (mirrors policy-engine's own capability-lookup pattern). Needs
+`ANTHROPIC_API_KEY` set — fails fast without it.
