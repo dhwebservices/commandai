@@ -12,3 +12,7 @@ __pycache__/
 *.pyc
 .venv/
 .DS_Store
+
+# Tauri desktop build artifacts
+apps/web-console/src-tauri/target/
+apps/web-console/src-tauri/gen/

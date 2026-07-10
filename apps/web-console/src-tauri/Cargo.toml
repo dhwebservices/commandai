@@ -1,0 +1,16 @@
+[package]
+name = "commandai-desktop"
+version = "0.1.0"
+edition = "2021"
+description = "CommandAI desktop shell — Tauri wrapper around web-console"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[lints.rust]
+unsafe_code = "deny"
