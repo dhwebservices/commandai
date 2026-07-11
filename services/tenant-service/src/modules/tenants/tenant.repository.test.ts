@@ -38,7 +38,7 @@ describe("TenantRepository.findById", () => {
 
     expect(tenant).not.toBeNull();
     expect(tenant?.members).toHaveLength(1);
-    expect(tenant?.members[0].role).toBe("owner");
+    expect(tenant?.members[0]?.role).toBe("owner");
   });
 
   it("returns null for a nonexistent tenant", async () => {

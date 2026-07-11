@@ -21,7 +21,7 @@ export class StubBillingProvider implements BillingProvider {
     return { tier: "free" as PlanTier, active: true };
   }
 
-  async createCheckoutSession(_tenantId: string, _tier: PlanTier) {
+  async createCheckoutSession(_tenantId: string, _tier: PlanTier): Promise<{ url: string }> {
     throw new Error("Billing not implemented in Phase 1.");
   }
 }

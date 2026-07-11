@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { getEnvVar } from "@commandai/config";
 import { randomBytes, createHash } from "node:crypto";
 
 /**
@@ -12,10 +11,12 @@ export class AgentsService {
   private readonly supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(
-      getEnvVar("SUPABASE_URL"),
-      getEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
-    );
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set");
+    }
+    this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
   async generateEnrollmentToken(
