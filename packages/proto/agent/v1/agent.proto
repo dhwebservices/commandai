@@ -22,7 +22,23 @@ message ActionStatus {
   string occurred_at = 3;
 }
 
+message EnrollRequest {
+  string token_id = 1;
+  string token_secret = 2;
+}
+
+message EnrollResponse {
+  string agent_id = 1;
+  string tenant_id = 2;
+  string issued_at = 3;
+  string rotates_at = 4;
+}
+
 service AgentChannel {
+  // One-time enrollment: exchange enrollment token for long-lived credential.
+  // Agent presents token + client cert via mTLS; receives agent_id in response.
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+
   // Cloud pushes an Intent for the agent to evaluate/execute.
   rpc StreamIntents(stream Ack) returns (stream Intent);
 

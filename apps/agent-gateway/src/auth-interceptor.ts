@@ -1,22 +1,61 @@
 import type { PeerCertificate } from "node:tls";
+import { createHash } from "node:crypto";
+import { AgentAuthRepository } from "./agent-auth.repository";
+import { createClient } from "@supabase/supabase-js";
+import { getEnvVar } from "./config";
 
 /**
- * THIS IS THE GAP RFC-001's SECURITY REVIEW MUST CLOSE (ADR-010).
+ * Verify agent client certificate and return agent+tenant identity.
+ * Per RFC-001, this is the trust boundary becoming network-reachable.
  *
- * Real implementation must: extract the client cert's identity, look up
- * the corresponding AgentCredential (packages/schema/agent-auth.ts),
- * verify it hasn't been revoked/expired, and return the agent+tenant
- * identity for the call. Until that exists, this throws rather than
- * silently trusting any presented certificate — an unimplemented check
- * that fails open would be far worse than one that fails loud.
+ * SECURITY CRITICAL: This function is the gatekeeper for all agent<->cloud
+ * communication. Any bypass or weakening of this check would allow arbitrary
+ * clients to impersonate agents.
  */
-export function verifyAgentCertificate(_cert: PeerCertificate): {
+export async function verifyAgentCertificate(cert: PeerCertificate): Promise<{
   agentId: string;
   tenantId: string;
-} {
-  throw new Error(
-    "Agent certificate verification is not yet implemented (ADR-010 / RFC-001). " +
-      "No agent may connect to this gateway in a real environment until this is built " +
-      "and security-reviewed. See packages/proto/Security.md.",
+}> {
+  // Extract certificate fingerprint (SHA256 of DER-encoded cert)
+  const fingerprint = getCertFingerprint(cert);
+
+  // Verify against stored credentials via Supabase
+  const supabase = createClient(
+    getEnvVar("SUPABASE_URL"),
+    getEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
   );
+  const repo = new AgentAuthRepository(supabase);
+
+  try {
+    const identity = await repo.verifyCredential(fingerprint);
+    return identity;
+  } catch (error) {
+    // Log auth failures for security audit (but don't leak details to client)
+    console.error("Agent certificate verification failed:", {
+      fingerprint,
+      subject: cert.subject,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw new Error("Agent authentication failed");
+  }
+}
+
+/**
+ * Extract SHA256 fingerprint from client certificate.
+ * This is the stable identifier we use to look up AgentCredential.
+ */
+function getCertFingerprint(cert: PeerCertificate): string {
+  // Node provides fingerprint256 in the format "AA:BB:CC:..."
+  // Normalize to lowercase hex without colons for consistent storage
+  if (cert.fingerprint256) {
+    return cert.fingerprint256.replace(/:/g, "").toLowerCase();
+  }
+
+  // Fallback: compute SHA256 of DER-encoded cert if fingerprint256 not available
+  // (shouldn't happen in modern Node, but defensive)
+  if (cert.raw) {
+    return createHash("sha256").update(cert.raw).digest("hex");
+  }
+
+  throw new Error("Cannot extract certificate fingerprint");
 }

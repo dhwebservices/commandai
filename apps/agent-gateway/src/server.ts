@@ -3,8 +3,11 @@ import path from "node:path";
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
 import { createLogger } from "@commandai/logger";
-import { loadAgentGatewayConfig } from "./config";
+import { loadAgentGatewayConfig, getEnvVar } from "./config";
 import { verifyAgentCertificate } from "./auth-interceptor";
+import { createClient } from "@supabase/supabase-js";
+import { AgentAuthRepository } from "./agent-auth.repository";
+import { EnrollmentService } from "./enrollment.service";
 
 const PROTO_PATH = path.join(__dirname, "../../../packages/proto/agent/v1/agent.proto");
 
@@ -55,18 +58,84 @@ export function startServer() {
 
   const server = new grpc.Server();
 
+  // Initialize enrollment service (Supabase-backed)
+  const supabase = createClient(
+    getEnvVar("SUPABASE_URL"),
+    getEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
+  );
+  const authRepo = new AgentAuthRepository(supabase);
+  const enrollmentService = new EnrollmentService(authRepo, supabase);
+
   server.addService(AgentChannel.service, {
-    // Both handlers explicitly refuse until verifyAgentCertificate is
-    // implemented (ADR-010) — this is not a placeholder that quietly
-    // accepts connections, it hard-fails every call.
-    streamIntents: (call: grpc.ServerDuplexStream<unknown, unknown>) => {
+    // Enroll: one-time token exchange for new agent registration
+    Enroll: async (call: grpc.ServerUnaryCall<any, any>, callback: grpc.sendUnaryData<any>) => {
       const peer = call.getPeer();
       try {
+        const { token_id, token_secret } = call.request;
+
+        if (!token_id || !token_secret) {
+          throw new Error("token_id and token_secret are required");
+        }
+
+        // Extract client certificate (required for enrollment)
+        const cert = (call as any).request.socket?.getPeerCertificate?.();
+        if (!cert || !cert.subject) {
+          throw new Error("Client certificate required for enrollment");
+        }
+
+        // Exchange token for credential
+        const result = await enrollmentService.enrollAgent(token_id, token_secret, cert);
+
+        logger.info(
+          { agentId: result.agentId, tenantId: result.tenantId, peer },
+          "Agent enrolled successfully",
+        );
+
+        callback(null, {
+          agent_id: result.agentId,
+          tenant_id: result.tenantId,
+          issued_at: new Date().toISOString(),
+          rotates_at: new Date(Date.now() + 30 * 86_400_000).toISOString(), // 30 days
+        });
+      } catch (err) {
+        logger.error({ peer, err }, "Enrollment failed");
+        callback(
+          {
+            code: grpc.status.UNAUTHENTICATED,
+            message: (err as Error).message,
+          },
+          null,
+        );
+      }
+    },
+    // StreamIntents: agent subscribes to receive Intent assignments
+    streamIntents: async (call: grpc.ServerDuplexStream<unknown, unknown>) => {
+      const peer = call.getPeer();
+      try {
+        let agentIdentity: { agentId: string; tenantId: string };
+
         if (!config.AGENT_GATEWAY_ALLOW_INSECURE) {
-          verifyAgentCertificate({} as any); // throws — see auth-interceptor.ts
+          // Extract client certificate from TLS session
+          const cert = (call as any).request.socket?.getPeerCertificate?.();
+          if (!cert || !cert.subject) {
+            throw new Error("No client certificate presented");
+          }
+          agentIdentity = await verifyAgentCertificate(cert);
+          logger.info({ agentId: agentIdentity.agentId, tenantId: agentIdentity.tenantId, peer }, "Agent authenticated for StreamIntents");
         } else {
+          // Insecure mode refuses connection (no identity, no auth)
           throw new Error("Insecure mode has no identity to verify — refusing the stream.");
         }
+
+        // TODO: Actual intent streaming logic (subscribe to NATS, filter by tenantId, forward to agent)
+        call.on("data", (data) => {
+          logger.debug({ agentId: agentIdentity.agentId, data }, "Received data from agent");
+        });
+
+        call.on("end", () => {
+          logger.info({ agentId: agentIdentity.agentId }, "Agent disconnected from StreamIntents");
+          call.end();
+        });
       } catch (err) {
         logger.error({ peer, err }, "Rejecting StreamIntents — agent identity not verified");
         call.emit("error", {
@@ -76,14 +145,32 @@ export function startServer() {
         call.end();
       }
     },
-    streamStatus: (call: grpc.ServerDuplexStream<unknown, unknown>) => {
+    // StreamStatus: agent sends status updates to cloud
+    streamStatus: async (call: grpc.ServerDuplexStream<unknown, unknown>) => {
       const peer = call.getPeer();
       try {
+        let agentIdentity: { agentId: string; tenantId: string };
+
         if (!config.AGENT_GATEWAY_ALLOW_INSECURE) {
-          verifyAgentCertificate({} as any);
+          const cert = (call as any).request.socket?.getPeerCertificate?.();
+          if (!cert || !cert.subject) {
+            throw new Error("No client certificate presented");
+          }
+          agentIdentity = await verifyAgentCertificate(cert);
+          logger.info({ agentId: agentIdentity.agentId, tenantId: agentIdentity.tenantId, peer }, "Agent authenticated for StreamStatus");
         } else {
           throw new Error("Insecure mode has no identity to verify — refusing the stream.");
         }
+
+        // TODO: Actual status handling logic (receive status from agent, publish to NATS)
+        call.on("data", (data) => {
+          logger.debug({ agentId: agentIdentity.agentId, data }, "Received status update from agent");
+        });
+
+        call.on("end", () => {
+          logger.info({ agentId: agentIdentity.agentId }, "Agent disconnected from StreamStatus");
+          call.end();
+        });
       } catch (err) {
         logger.error({ peer, err }, "Rejecting StreamStatus — agent identity not verified");
         call.emit("error", {

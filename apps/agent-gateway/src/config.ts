@@ -35,3 +35,15 @@ export function loadAgentGatewayConfig(): AgentGatewayEnv {
 
   return config;
 }
+
+/**
+ * Get environment variable or throw if missing.
+ * Used for Supabase config that's validated separately.
+ */
+export function getEnvVar(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value;
+}

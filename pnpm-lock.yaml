@@ -38,6 +38,9 @@ importers:
       '@grpc/proto-loader':
         specifier: ^0.7.13
         version: 0.7.15
+      '@supabase/supabase-js':
+        specifier: ^2.45.0
+        version: 2.110.2
       zod:
         specifier: ^3.23.0
         version: 3.25.76
