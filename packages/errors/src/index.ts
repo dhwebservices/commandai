@@ -41,7 +41,7 @@ export class PolicyDeniedError extends CommandAIError {
     super(message, context);
   }
 
-  toClientResponse() {
+  override toClientResponse() {
     return {
       code: this.code,
       message: this.message,

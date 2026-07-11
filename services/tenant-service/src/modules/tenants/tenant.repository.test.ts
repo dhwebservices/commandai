@@ -82,24 +82,24 @@ describe("TenantRepository.addMember", () => {
   it("adds a member and re-checks the owner invariant", async () => {
     const supabase = makeSupabaseMock(
       {
-        id: "tenant-1",
+        id: "33333333-3333-3333-3333-333333333333",
         name: "Acme",
         type: "business",
         parent_tenant_id: null,
         blocked_capability_ids: [],
         created_at: new Date().toISOString(),
       },
-      [{ id: "owner-1", role: "owner", created_at: new Date().toISOString() }],
+      [{ id: "44444444-4444-4444-4444-444444444444", role: "owner", created_at: new Date().toISOString() }],
     );
     const repo = new TenantRepository(supabase as any);
 
-    await expect(repo.addMember("tenant-1", "member-2", "member")).resolves.toBeUndefined();
+    await expect(repo.addMember("33333333-3333-3333-3333-333333333333", "55555555-5555-5555-5555-555555555555", "member")).resolves.toBeUndefined();
   });
 
   it("throws if the tenant does not exist", async () => {
     const supabase = makeSupabaseMock(null, []);
     const repo = new TenantRepository(supabase as any);
 
-    await expect(repo.addMember("nonexistent", "member-2", "member")).rejects.toThrow();
+    await expect(repo.addMember("99999999-9999-9999-9999-999999999999", "55555555-5555-5555-5555-555555555555", "member")).rejects.toThrow();
   });
 });

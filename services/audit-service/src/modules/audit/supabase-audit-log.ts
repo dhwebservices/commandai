@@ -39,7 +39,7 @@ export class SupabaseAuditLog implements AuditWriter, AuditReader {
       .order("occurred_at", { ascending: true });
 
     if (error) throw new InternalError("Failed to fetch audit trail.", { error });
-    return (data ?? []) as AuditEvent[];
+    return (data ?? []) as unknown as AuditEvent[];
   }
 
   /** Upserts the actions row itself (state_history mirrors AuditEvent rows, queried separately). */
