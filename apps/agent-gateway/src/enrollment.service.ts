@@ -1,6 +1,7 @@
 import { AgentAuthRepository } from "./agent-auth.repository";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PeerCertificate } from "node:tls";
+import { createHash } from "node:crypto";
 
 /**
  * Agent enrollment service: handles token exchange for new agent registration.
@@ -57,8 +58,7 @@ function extractFingerprint(cert: PeerCertificate): string {
     return cert.fingerprint256.replace(/:/g, "").toLowerCase();
   }
   if (cert.raw) {
-    const crypto = require("crypto");
-    return crypto.createHash("sha256").update(cert.raw).digest("hex");
+    return createHash("sha256").update(cert.raw).digest("hex");
   }
   throw new Error("Cannot extract certificate fingerprint");
 }

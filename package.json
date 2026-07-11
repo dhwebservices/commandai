@@ -2,6 +2,7 @@
   "name": "commandai",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "engines": {
     "node": ">=20"
   },
@@ -19,9 +20,11 @@
     "db:migrate": "pnpm --filter @commandai/db migrate"
   },
   "devDependencies": {
-    "turbo": "^2.0.0",
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
     "prettier": "^3.3.0",
+    "turbo": "^2.0.0",
     "typescript": "^5.5.0",
-    "eslint": "^9.0.0"
+    "typescript-eslint": "^8.0.0"
   }
 }

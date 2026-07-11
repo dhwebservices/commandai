@@ -26,13 +26,13 @@ function loadAgentChannelDefinition() {
     defaults: true,
     oneofs: true,
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const proto = grpc.loadPackageDefinition(packageDefinition) as any;
   return proto.commandai.agent.v1.AgentChannel;
 }
 
 function buildServerCredentials(config: ReturnType<typeof loadAgentGatewayConfig>) {
   if (config.AGENT_GATEWAY_ALLOW_INSECURE) {
-    // eslint-disable-next-line no-console
     console.warn(
       "*** AGENT_GATEWAY_ALLOW_INSECURE=true — this gateway is accepting UNAUTHENTICATED " +
         "plaintext connections. This must NEVER be set outside local dev (ADR-010). ***",
@@ -68,6 +68,7 @@ export function startServer() {
 
   server.addService(AgentChannel.service, {
     // Enroll: one-time token exchange for new agent registration
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Enroll: async (call: grpc.ServerUnaryCall<any, any>, callback: grpc.sendUnaryData<any>) => {
       const peer = call.getPeer();
       try {
@@ -78,6 +79,7 @@ export function startServer() {
         }
 
         // Extract client certificate (required for enrollment)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const cert = (call as any).request.socket?.getPeerCertificate?.();
         if (!cert || !cert.subject) {
           throw new Error("Client certificate required for enrollment");
@@ -116,6 +118,7 @@ export function startServer() {
 
         if (!config.AGENT_GATEWAY_ALLOW_INSECURE) {
           // Extract client certificate from TLS session
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const cert = (call as any).request.socket?.getPeerCertificate?.();
           if (!cert || !cert.subject) {
             throw new Error("No client certificate presented");
@@ -152,6 +155,7 @@ export function startServer() {
         let agentIdentity: { agentId: string; tenantId: string };
 
         if (!config.AGENT_GATEWAY_ALLOW_INSECURE) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const cert = (call as any).request.socket?.getPeerCertificate?.();
           if (!cert || !cert.subject) {
             throw new Error("No client certificate presented");

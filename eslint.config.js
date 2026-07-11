@@ -19,5 +19,13 @@ export default tseslint.config(
       ]
     },
     ignores: ["dist/**", "node_modules/**", "coverage/**"]
+  },
+  {
+    // Relax rules for test files (mocks often need any)
+    files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off"
+    }
   }
 );

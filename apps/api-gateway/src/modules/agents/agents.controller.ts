@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request } from "@nestjs/common";
+import { Controller, Post, Body } from "@nestjs/common";
 import { AgentsService } from "./agents.service";
 import { z } from "zod";
 
@@ -22,7 +22,6 @@ export class AgentsController {
    */
   @Post("enrollment-tokens")
   async generateEnrollmentToken(
-    @Request() req: any,
     @Body() body: unknown,
   ): Promise<{ tokenId: string; tokenSecret: string; expiresAt: string }> {
     // TODO: Add auth guard to verify user is admin for tenantId
