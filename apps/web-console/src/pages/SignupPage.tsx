@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@commandai/ui-kit";
 import { authApi, ApiError } from "../lib/api-client";
 
 export function SignupPage() {
-  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [password, setPassword] = useState("");

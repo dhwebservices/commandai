@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@commandai/ui-kit";
 import { authApi, ApiError } from "../lib/api-client";
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const token = searchParams.get("token");
   const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
