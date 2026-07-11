@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { Button } from "@commandai/ui-kit";
 import { authApi, ApiError } from "../lib/api-client";
 
 export function VerifyEmailPage() {
@@ -25,15 +26,33 @@ export function VerifyEmailPage() {
 
   return (
     <div className="auth-page">
-      <h1>Email verification</h1>
-      {status === "pending" && <p>Verifying...</p>}
-      {status === "success" && (
-        <>
-          <p>Your email is verified.</p>
-          <Link to="/login">Go to login</Link>
-        </>
-      )}
-      {status === "error" && <p role="alert">{message}</p>}
+      <div className="auth-card auth-success text-center">
+        <h1>Email verification</h1>
+        {status === "pending" && (
+          <>
+            <div className="loading" style={{ margin: "2rem auto" }}></div>
+            <p>Verifying your email...</p>
+          </>
+        )}
+        {status === "success" && (
+          <>
+            <p style={{ marginBottom: "1.5rem" }}>Your email is verified! You can now log in.</p>
+            <Button as={Link} to="/login" style={{ width: "100%" }}>
+              Go to login
+            </Button>
+          </>
+        )}
+        {status === "error" && (
+          <>
+            <p role="alert" style={{ color: "var(--color-error)", marginBottom: "1.5rem" }}>
+              {message}
+            </p>
+            <Button as={Link} to="/login" variant="secondary" style={{ width: "100%" }}>
+              Back to login
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Button } from "@commandai/ui-kit";
+import { Button, Input } from "@commandai/ui-kit";
 import { authApi, ApiError } from "../lib/api-client";
 
 export function ResetPasswordPage() {
@@ -32,32 +32,38 @@ export function ResetPasswordPage() {
   if (done) {
     return (
       <div className="auth-page">
-        <h1>Password updated</h1>
-        <Link to="/login">Go to login</Link>
+        <div className="auth-card auth-success text-center">
+          <h1>Password updated</h1>
+          <p style={{ marginBottom: "1.5rem" }}>Your password has been successfully updated.</p>
+          <Button as={Link} to="/login" style={{ width: "100%" }}>
+            Go to login
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="auth-page">
-      <h1>Set a new password</h1>
-      <form onSubmit={handleSubmit}>
-        <label>
-          New password
-          <input
+      <div className="auth-card">
+        <h1>Set a new password</h1>
+        <form onSubmit={handleSubmit}>
+          <Input
+            label="New password"
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             minLength={8}
             required
             autoComplete="new-password"
+            placeholder="At least 8 characters"
           />
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <Button type="submit" disabled={submitting}>
-          {submitting ? "Updating..." : "Update password"}
-        </Button>
-      </form>
+          {error && <p role="alert">{error}</p>}
+          <Button type="submit" disabled={submitting} style={{ width: "100%" }}>
+            {submitting ? "Updating..." : "Update password"}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }
