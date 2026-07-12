@@ -18,6 +18,10 @@ __pycache__/
 apps/web-console/src-tauri/target/
 apps/web-console/src-tauri/gen/
 
+# Electron desktop build artifacts
+apps/desktop-app/release/
+apps/desktop-app/out/
+
 # Security-sensitive files
 *.pem
 *.key
