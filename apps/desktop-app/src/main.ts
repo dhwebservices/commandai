@@ -13,7 +13,7 @@ try {
 } catch (error) {
   console.warn("Auto-launch not available:", error);
 }
-const API_BASE = process.env.API_URL || "https://splendid-courage-production.up.railway.app"; // Railway API
+const API_BASE = process.env.API_URL || "https://commandai-4l50.onrender.com"; // Render API
 const WEB_APP_URL = process.env.WEB_APP_URL || "https://ee725405.comandr.pages.dev"; // Cloudflare Pages
 
 class ComandrApp {
