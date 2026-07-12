@@ -30,14 +30,21 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 
-# Copy built files and dependencies
-COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/apps/api-gateway/dist ./apps/api-gateway/dist
-COPY --from=base /app/apps/api-gateway/package.json ./apps/api-gateway/
+# Copy workspace structure
+COPY --from=base /app/package.json ./
+COPY --from=base /app/pnpm-workspace.yaml ./
+COPY --from=base /app/pnpm-lock.yaml ./
+COPY --from=base /app/tsconfig.base.json ./
+
+# Copy built app
+COPY --from=base /app/apps/api-gateway ./apps/api-gateway
+
+# Copy all packages (needed for workspace dependencies)
 COPY --from=base /app/packages ./packages
 COPY --from=base /app/services ./services
-COPY --from=base /app/pnpm-workspace.yaml ./
-COPY --from=base /app/package.json ./
+
+# Install production dependencies only
+RUN pnpm install --prod --frozen-lockfile
 
 # Set environment
 ENV NODE_ENV=production
