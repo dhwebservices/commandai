@@ -12,16 +12,21 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // CORS - Restrict to known origins
-  const allowedOrigins = [
-    "http://localhost:5173", // Local dev
-    "https://comandr.pages.dev", // Production
-    "https://comandr-web.pages.dev", // Production alt
-    process.env.WEB_APP_URL || "",
-  ].filter(Boolean);
-
+  // CORS - Allow Cloudflare Pages deployments (including preview URLs)
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:5173", // Local dev
+        process.env.WEB_APP_URL || "",
+      ].filter(Boolean);
+
+      // Allow all *.comandr.pages.dev subdomains (includes preview deployments)
+      if (!origin || allowedOrigins.includes(origin) || /^https:\/\/[\w-]+\.comandr\.pages\.dev$/.test(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
