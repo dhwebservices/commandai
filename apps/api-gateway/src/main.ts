@@ -12,9 +12,25 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // CORS - Allow all origins temporarily for testing
+  // CORS - Production: only allow comandr.pages.dev and subdomains
   app.enableCors({
-    origin: true, // Allow all origins
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true); // Allow same-origin and tools like curl
+      }
+
+      const allowedPatterns = [
+        "http://localhost:5173", // Local dev
+        "https://comandr.pages.dev", // Production
+        /^https:\/\/[a-zA-Z0-9-]+\.comandr\.pages\.dev$/, // Preview deployments
+      ];
+
+      const isAllowed = allowedPatterns.some((pattern) =>
+        typeof pattern === "string" ? pattern === origin : pattern.test(origin),
+      );
+
+      callback(null, isAllowed);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
