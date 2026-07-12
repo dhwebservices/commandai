@@ -12,26 +12,9 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // CORS - Allow Cloudflare Pages deployments (including preview URLs)
+  // CORS - Allow all origins temporarily for testing
   app.enableCors({
-    origin: (origin, callback) => {
-      // No origin means same-origin or certain tools like curl
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      const allowedOrigins = [
-        "http://localhost:5173",
-        "https://comandr.pages.dev",
-        process.env.WEB_APP_URL || "",
-      ].filter(Boolean);
-
-      // Allow exact matches or any *.comandr.pages.dev subdomain
-      const isAllowed = allowedOrigins.includes(origin) ||
-                       /^https:\/\/[a-zA-Z0-9-]+\.comandr\.pages\.dev$/.test(origin);
-
-      callback(null, isAllowed);
-    },
+    origin: true, // Allow all origins
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
