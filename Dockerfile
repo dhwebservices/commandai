@@ -1,5 +1,5 @@
-# Production-ready Dockerfile for CommandAI API Gateway
-FROM node:20-alpine AS base
+# Production-ready Dockerfile for Comandr API Gateway
+FROM node:22-alpine AS base
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -24,7 +24,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm build
 
 # Production stage
-FROM node:20-alpine
+FROM node:22-alpine
 
 RUN npm install -g pnpm
 
