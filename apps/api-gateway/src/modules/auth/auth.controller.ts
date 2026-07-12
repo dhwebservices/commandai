@@ -19,7 +19,7 @@ export class AuthController {
     const config = loadApiGatewayConfig();
     const admin = createSupabaseAdminClient(config.SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY);
     const anon = createSupabaseAnonClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY);
-    const email = new EmailService(config.RESEND_API_KEY, config.RESEND_FROM_EMAIL);
+    const email = new EmailService(config.RESEND_API_KEY, config.RESEND_FROM_EMAIL, config.WEB_APP_URL);
     this.authService = new AuthService(admin, anon, email);
   }
 

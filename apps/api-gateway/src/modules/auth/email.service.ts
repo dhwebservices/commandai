@@ -6,6 +6,7 @@ export class EmailService {
   constructor(
     private readonly apiKey: string,
     private readonly fromEmail: string,
+    private readonly webAppUrl: string,
   ) {}
 
   private async send(to: string, subject: string, html: string): Promise<void> {
@@ -30,7 +31,7 @@ export class EmailService {
       "Verify your CommandAI account",
       `<p>Hi ${username},</p>
        <p>Confirm your email to finish setting up your CommandAI account:</p>
-       <p><a href="https://app.commandai.dev/verify-email?token=${token}">Verify email</a></p>
+       <p><a href="${this.webAppUrl}/verify-email?token=${token}">Verify email</a></p>
        <p>This link expires in 24 hours. If you didn't create this account, ignore this email.</p>`,
     );
   }
@@ -41,7 +42,7 @@ export class EmailService {
       "Reset your CommandAI password",
       `<p>Hi ${username},</p>
        <p>Reset your password using the link below:</p>
-       <p><a href="https://app.commandai.dev/reset-password?token=${token}">Reset password</a></p>
+       <p><a href="${this.webAppUrl}/reset-password?token=${token}">Reset password</a></p>
        <p>This link expires in 1 hour. If you didn't request this, ignore this email.</p>`,
     );
   }

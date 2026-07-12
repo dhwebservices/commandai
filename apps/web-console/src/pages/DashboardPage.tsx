@@ -29,13 +29,17 @@ export function DashboardPage() {
         </div>
 
         <div className="dashboard-grid">
-          <Card>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-              <h3>Agents</h3>
-              <span className="card-badge">Coming soon</span>
-            </div>
-            <p>View and manage your deployed AI agents across your infrastructure.</p>
-          </Card>
+          <div onClick={() => (window.location.href = "/agent")} style={{ cursor: "pointer" }}>
+            <Card>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <h3>AI Agent</h3>
+                <span className="card-badge" style={{ background: "var(--color-success)", color: "white" }}>
+                  ACTIVE
+                </span>
+              </div>
+              <p>Control your desktop AI agent with natural language commands. Click to open agent dashboard.</p>
+            </Card>
+          </div>
 
           <Card>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>

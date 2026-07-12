@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { DashboardPage } from "./pages/DashboardPage";
+import { AgentPage } from "./pages/AgentPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
@@ -23,6 +24,14 @@ export function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent"
+            element={
+              <ProtectedRoute>
+                <AgentPage />
               </ProtectedRoute>
             }
           />

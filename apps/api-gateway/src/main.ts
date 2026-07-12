@@ -11,6 +11,7 @@ async function bootstrap() {
   const logger = createLogger("api-gateway", config.LOG_LEVEL);
 
   const app = await NestFactory.create(AppModule);
+  app.enableCors(); // allow frontend to connect from different port
   app.enableVersioning({ type: VersioningType.URI }); // every route versioned, Non-Negotiable #4
   app.useGlobalFilters(new AllExceptionsFilter()); // no error path exits unhandled, Architecture Principle #6
 
