@@ -24,10 +24,7 @@ export class AIController {
   constructor() {
     const config = loadApiGatewayConfig();
     this.anthropicApiKey = process.env.ANTHROPIC_API_KEY || "";
-
-    if (!this.anthropicApiKey) {
-      console.warn("[AI] ANTHROPIC_API_KEY not set - AI features will not work");
-    }
+    // AI is optional - no warnings needed
   }
 
   @Post("generate-intent")
@@ -41,14 +38,29 @@ export class AIController {
       return dbMatch;
     }
 
-    console.log(`[AI] ⚠️ No database match, falling back to AI...`);
+    console.log(`[AI] ⚠️ No database match found`);
 
     // SECOND: Fall back to AI if configured
     if (!this.anthropicApiKey) {
-      throw new Error(
-        "❌ Could not match command from database and ANTHROPIC_API_KEY not set for AI fallback. Command not recognized."
-      );
+      // No AI available - return helpful suggestion
+      return {
+        capabilityId: "system.help",
+        parameters: {
+          message: "Command not recognized. Try: 'show cpu usage', 'list processes', 'system info', 'list files', 'screenshot'",
+          suggestions: [
+            "show cpu usage",
+            "show memory usage",
+            "list processes",
+            "system info",
+            "list files",
+            "take screenshot",
+          ],
+        },
+        reasoning: "Command not found in database. AI is not configured. Showing available commands.",
+      };
     }
+
+    console.log(`[AI] Using AI to interpret command...`);
 
     const capabilities = this.getAvailableCapabilities();
     const systemPrompt = this.buildSystemPrompt(capabilities);
@@ -91,6 +103,7 @@ export class AIController {
 
   private getAvailableCapabilities(): string[] {
     return [
+      "system.help", // Special capability for showing help/suggestions
       "file.read", "file.write", "file.delete", "file.list", "file.search",
       "directory.create", "directory.delete",
       "system.cpu.usage", "system.memory.usage", "system.disk.usage", "system.info",
