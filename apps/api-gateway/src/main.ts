@@ -15,17 +15,22 @@ async function bootstrap() {
   // CORS - Allow Cloudflare Pages deployments (including preview URLs)
   app.enableCors({
     origin: (origin, callback) => {
+      // No origin means same-origin or certain tools like curl
+      if (!origin) {
+        return callback(null, true);
+      }
+
       const allowedOrigins = [
-        "http://localhost:5173", // Local dev
+        "http://localhost:5173",
+        "https://comandr.pages.dev",
         process.env.WEB_APP_URL || "",
       ].filter(Boolean);
 
-      // Allow all *.comandr.pages.dev subdomains (includes preview deployments)
-      if (!origin || allowedOrigins.includes(origin) || /^https:\/\/[\w-]+\.comandr\.pages\.dev$/.test(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
+      // Allow exact matches or any *.comandr.pages.dev subdomain
+      const isAllowed = allowedOrigins.includes(origin) ||
+                       /^https:\/\/[a-zA-Z0-9-]+\.comandr\.pages\.dev$/.test(origin);
+
+      callback(null, isAllowed);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
