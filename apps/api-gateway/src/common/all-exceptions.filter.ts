@@ -14,6 +14,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
 
     if (exception instanceof CommandAIError) {
+      // Log CommandAI errors with their context for debugging
+      // eslint-disable-next-line no-console
+      console.error("CommandAI error:", exception.code, exception.message, exception.context);
       response.status(exception.httpStatus).json(exception.toClientResponse());
       return;
     }
