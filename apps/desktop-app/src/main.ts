@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification } from "electron";
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, dialog } from "electron";
 import * as path from "path";
 import { DesktopAgent } from "./agent";
 import { matchCommand } from "./command-database";
@@ -120,8 +120,15 @@ class ComandrApp {
         click: () => this.showWindow(),
       },
       {
+        label: "Send Command...",
+        type: "normal",
+        enabled: isLoggedIn,
+        click: () => this.showCommandInput(),
+      },
+      {
         label: "Quick Commands",
         type: "submenu",
+        enabled: isLoggedIn,
         submenu: [
           {
             label: "Show System Info",
@@ -290,6 +297,98 @@ class ComandrApp {
     } catch (error) {
       console.error("Failed to report result:", error);
     }
+  }
+
+  private async showCommandInput() {
+    if (!this.userId) {
+      this.showNotification("Not Logged In", "Please log in first");
+      return;
+    }
+
+    // Create a simple input window
+    const inputWindow = new BrowserWindow({
+      width: 500,
+      height: 200,
+      resizable: false,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
+      title: "Send Command",
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false,
+      },
+    });
+
+    // Load a simple HTML page with input
+    inputWindow.loadURL(`data:text/html;charset=utf-8,
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              padding: 20px;
+              background: #f5f5f5;
+              margin: 0;
+            }
+            h2 { margin-top: 0; color: #333; }
+            input {
+              width: 100%;
+              padding: 12px;
+              font-size: 14px;
+              border: 1px solid #ddd;
+              border-radius: 4px;
+              box-sizing: border-box;
+            }
+            button {
+              margin-top: 10px;
+              padding: 10px 20px;
+              font-size: 14px;
+              background: #007bff;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            }
+            button:hover { background: #0056b3; }
+            .examples {
+              margin-top: 15px;
+              font-size: 12px;
+              color: #666;
+            }
+          </style>
+        </head>
+        <body>
+          <h2>Send Command</h2>
+          <input type="text" id="commandInput" placeholder="e.g., show cpu usage" autofocus />
+          <button onclick="sendCommand()">Send</button>
+          <div class="examples">
+            <strong>Examples:</strong> show cpu, list processes, system info, take screenshot
+          </div>
+          <script>
+            const { ipcRenderer } = require('electron');
+
+            document.getElementById('commandInput').addEventListener('keypress', (e) => {
+              if (e.key === 'Enter') sendCommand();
+            });
+
+            function sendCommand() {
+              const command = document.getElementById('commandInput').value.trim();
+              if (command) {
+                ipcRenderer.send('execute-command', command);
+                window.close();
+              }
+            }
+          </script>
+        </body>
+      </html>
+    `);
+
+    // Handle command execution
+    ipcMain.once("execute-command", async (event, command) => {
+      await this.executeQuickCommand(command);
+    });
   }
 
   private async executeQuickCommand(command: string) {
