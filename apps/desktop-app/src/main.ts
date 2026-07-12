@@ -3,6 +3,7 @@ import * as path from "path";
 import { DesktopAgent } from "./agent";
 import { matchCommand } from "./command-database";
 import { SimpleStore } from "./simple-store";
+import { CommandProcessor } from "./command-processor";
 
 const store = new SimpleStore();
 
@@ -23,6 +24,7 @@ class ComandrApp {
   private autoLauncher: any = null;
   private pollInterval: NodeJS.Timeout | null = null;
   private userId: string | null = null;
+  private commandProcessor: CommandProcessor | null = null;
 
   constructor() {
     // Setup auto-launch (optional)
@@ -217,6 +219,7 @@ class ComandrApp {
     const savedUserId = store.get("userId") as string;
     if (savedUserId) {
       this.userId = savedUserId;
+      this.commandProcessor = new CommandProcessor(API_BASE, savedUserId);
       this.updateTrayMenu();
     }
   }
@@ -290,38 +293,52 @@ class ComandrApp {
   }
 
   private async executeQuickCommand(command: string) {
-    if (!this.userId) {
+    if (!this.userId || !this.commandProcessor) {
       this.showNotification("Not Logged In", "Please log in first");
       return;
     }
 
-    // Use command database instead of AI
-    const match = matchCommand(command);
-
-    if (!match) {
-      this.showNotification("Unknown Command", "Could not understand command");
-      return;
-    }
-
-    // Create intent directly
     try {
+      // Use command processing pipeline: local → server → AI
+      const processed = await this.commandProcessor.processCommand(command);
+
+      // Show feedback about where the command came from
+      const sourceLabel = {
+        local: "📂 Local",
+        server: "🌐 Server",
+        ai: "🤖 AI",
+        none: "❌ Unknown",
+      }[processed.source];
+
+      console.log(`[QuickCommand] ${sourceLabel}: ${processed.capability}`);
+
+      // If no match found, show help
+      if (processed.source === "none") {
+        this.showNotification("Command Not Found", processed.parameters.message || "Try: show cpu, list processes");
+        return;
+      }
+
+      // Create intent
       const response = await fetch(`${API_BASE}/v1/intents`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tenantId: this.userId,
-          capabilityId: match.capability,
-          parameters: match.parameters,
-          reasoning: match.description,
+          capabilityId: processed.capability,
+          parameters: processed.parameters,
+          reasoning: `${sourceLabel} ${processed.reasoning}`,
           requestedBy: this.userId,
         }),
       });
 
       if (response.ok) {
-        this.showNotification("Command Sent", match.description);
+        this.showNotification("Command Sent", `${sourceLabel} ${processed.reasoning}`);
+      } else {
+        this.showNotification("Error", "Failed to send command");
       }
     } catch (error) {
-      this.showNotification("Error", "Failed to send command");
+      console.error("[QuickCommand] Error:", error);
+      this.showNotification("Error", "Failed to process command");
     }
   }
 
