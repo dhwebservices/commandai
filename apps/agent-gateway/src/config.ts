@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BaseEnvSchema, loadConfig } from "@commandai/config";
+import { BaseEnvSchema, loadConfig } from "@comandr/config";
 
 export const AgentGatewayEnvSchema = BaseEnvSchema.extend({
   AGENT_GATEWAY_PORT: z.coerce.number().default(50051),

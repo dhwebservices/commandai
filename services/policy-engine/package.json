@@ -1,5 +1,5 @@
 {
-  "name": "@commandai/policy-engine",
+  "name": "@comandr/policy-engine",
   "version": "0.1.0",
   "private": true,
   "main": "./dist/index.js",
@@ -13,10 +13,10 @@
     "test:integration": "vitest run test/integration"
   },
   "dependencies": {
-    "@commandai/schema": "workspace:*",
-    "@commandai/errors": "workspace:*",
-    "@commandai/logger": "workspace:*",
-    "@commandai/config": "workspace:*",
+    "@comandr/schema": "workspace:*",
+    "@comandr/errors": "workspace:*",
+    "@comandr/logger": "workspace:*",
+    "@comandr/config": "workspace:*",
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",

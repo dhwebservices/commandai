@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Tenant, assertHasOwner, type TenantMember } from "./tenant.model";
-import { InternalError } from "@commandai/errors";
+import { InternalError } from "@comandr/errors";
 
 /**
  * Rewritten per ADR-009: Supabase is the real database. Tenant creation

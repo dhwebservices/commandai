@@ -1,5 +1,5 @@
 import { connect, type NatsConnection, StringCodec } from "nats";
-import type { AuditEvent } from "@commandai/schema";
+import type { AuditEvent } from "@comandr/schema";
 
 /**
  * Implements the "every transition emits a NATS event" requirement from

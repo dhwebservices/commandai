@@ -1,6 +1,6 @@
 import { Pool, type PoolClient } from "pg";
 import { z } from "zod";
-import { BaseEnvSchema, loadConfig } from "@commandai/config";
+import { BaseEnvSchema, loadConfig } from "@comandr/config";
 
 const DbEnvSchema = BaseEnvSchema.extend({
   POSTGRES_HOST: z.string(),

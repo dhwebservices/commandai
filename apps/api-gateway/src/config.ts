@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BaseEnvSchema, SupabaseEnvSchema, ResendEnvSchema, loadConfig } from "@commandai/config";
+import { BaseEnvSchema, SupabaseEnvSchema, ResendEnvSchema, loadConfig } from "@comandr/config";
 
 export const ApiGatewayEnvSchema = BaseEnvSchema.merge(SupabaseEnvSchema)
   .merge(ResendEnvSchema)

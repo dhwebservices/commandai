@@ -1,5 +1,5 @@
 {
-  "name": "@commandai/testing-utils",
+  "name": "@comandr/testing-utils",
   "version": "0.1.0",
   "private": true,
   "main": "./dist/index.js",
@@ -10,6 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@commandai/schema": "workspace:*"
+    "@comandr/schema": "workspace:*"
   }
 }

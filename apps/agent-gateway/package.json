@@ -1,5 +1,5 @@
 {
-  "name": "@commandai/agent-gateway",
+  "name": "@comandr/agent-gateway",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,9 +10,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@commandai/schema": "workspace:*",
-    "@commandai/logger": "workspace:*",
-    "@commandai/config": "workspace:*",
+    "@comandr/schema": "workspace:*",
+    "@comandr/logger": "workspace:*",
+    "@comandr/config": "workspace:*",
     "@grpc/grpc-js": "^1.11.0",
     "@grpc/proto-loader": "^0.7.13",
     "@supabase/supabase-js": "^2.45.0",

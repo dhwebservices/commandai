@@ -1,9 +1,9 @@
 import { Body, Controller, Inject, Post, Optional } from "@nestjs/common";
 import type { NatsConnection } from "nats";
-import { Intent as IntentSchema, isValidTransition, type ActionRecord } from "@commandai/schema";
-import { evaluateIntent, assertAllowed } from "@commandai/policy-engine";
-import { CapabilityNotFoundError } from "@commandai/errors";
-import { recordTransition, publishTransition } from "@commandai/audit-service";
+import { Intent as IntentSchema, isValidTransition, type ActionRecord } from "@comandr/schema";
+import { evaluateIntent, assertAllowed } from "@comandr/policy-engine";
+import { CapabilityNotFoundError } from "@comandr/errors";
+import { recordTransition, publishTransition } from "@comandr/audit-service";
 import { findCapability } from "./capability-registry";
 import { AUDIT_LOG, type AuditLogPort } from "./audit-log.provider";
 import { NATS_CONNECTION } from "./nats-connection.provider";

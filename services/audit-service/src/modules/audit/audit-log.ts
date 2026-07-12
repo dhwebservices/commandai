@@ -1,6 +1,6 @@
-import type { ActionRecord, ActionState, AuditEvent } from "@commandai/schema";
-import { isValidTransition } from "@commandai/schema";
-import { InternalError } from "@commandai/errors";
+import type { ActionRecord, ActionState, AuditEvent } from "@comandr/schema";
+import { isValidTransition } from "@comandr/schema";
+import { InternalError } from "@comandr/errors";
 
 /**
  * Shape both AuditLog (in-memory) and PostgresAuditLog implement, so

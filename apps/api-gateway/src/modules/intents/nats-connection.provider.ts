@@ -1,5 +1,5 @@
 import type { NatsConnection } from "nats";
-import { connectNats } from "@commandai/audit-service";
+import { connectNats } from "@comandr/audit-service";
 import { loadApiGatewayConfig } from "../../config";
 
 export const NATS_CONNECTION = "NATS_CONNECTION";

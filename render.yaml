@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: comandr-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: API_GATEWAY_PORT
+        value: 3000
+      - key: PORT
+        value: 3000
+      - key: SUPABASE_URL
+        value: https://xnmmwqrezspgjspdllzb.supabase.co
+      - key: SUPABASE_ANON_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: RESEND_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: RESEND_FROM_EMAIL
+        value: auth@dhwebsiteservices.co.uk
+      - key: WEB_APP_URL
+        value: https://ee725405.comandr.pages.dev
+    healthCheckPath: /v1/health
+    autoDeploy: true

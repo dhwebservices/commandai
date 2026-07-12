@@ -1,5 +1,5 @@
-import type { Capability, Intent } from "@commandai/schema";
-import { PolicyDeniedError } from "@commandai/errors";
+import type { Capability, Intent } from "@comandr/schema";
+import { PolicyDeniedError } from "@comandr/errors";
 
 export interface PolicyDecision {
   allowed: boolean;

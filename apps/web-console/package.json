@@ -1,5 +1,5 @@
 {
-  "name": "@commandai/web-console",
+  "name": "@comandr/web-console",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -13,7 +13,7 @@
     "desktop:build": "tauri build"
   },
   "dependencies": {
-    "@commandai/ui-kit": "workspace:*",
+    "@comandr/ui-kit": "workspace:*",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-router-dom": "^6.24.0"

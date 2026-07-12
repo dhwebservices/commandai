@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
-import { createLogger } from "@commandai/logger";
+import { createLogger } from "@comandr/logger";
 import { loadAgentGatewayConfig, getEnvVar } from "./config";
 import { verifyAgentCertificate } from "./auth-interceptor";
 import { createClient } from "@supabase/supabase-js";

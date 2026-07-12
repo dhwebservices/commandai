@@ -1,5 +1,5 @@
 {
-  "name": "commandai",
+  "name": "comandr",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -17,7 +17,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
     "dev:up": "bash tools/scripts/dev-up.sh",
-    "db:migrate": "pnpm --filter @commandai/db migrate"
+    "db:migrate": "pnpm --filter @comandr/db migrate"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

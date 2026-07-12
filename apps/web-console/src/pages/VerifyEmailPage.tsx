@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Button } from "@commandai/ui-kit";
+import { Button } from "@comandr/ui-kit";
 import { authApi, ApiError } from "../lib/api-client";
 
 export function VerifyEmailPage() {

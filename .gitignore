@@ -17,3 +17,14 @@ __pycache__/
 # Tauri desktop build artifacts
 apps/web-console/src-tauri/target/
 apps/web-console/src-tauri/gen/
+
+# Security-sensitive files
+*.pem
+*.key
+*.pfx
+*.p12
+credentials.json
+service-account.json
+secrets.yml
+.secrets
+*.secret

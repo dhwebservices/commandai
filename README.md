@@ -1,4 +1,4 @@
-# CommandAI
+# Comandr
 
 AI operating system management platform. See `docs/standards/` for the
 engineering charter (non-negotiables, design principles, coding standards,

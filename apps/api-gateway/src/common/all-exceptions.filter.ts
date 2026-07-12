@@ -1,6 +1,6 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from "@nestjs/common";
 import type { Response } from "express";
-import { CommandAIError, InternalError } from "@commandai/errors";
+import { CommandAIError, InternalError } from "@comandr/errors";
 
 /**
  * Every error either recovers, surfaces to the user, or is logged with

@@ -32,11 +32,23 @@ export class AIController {
 
   @Post("generate-intent")
   async generateIntent(@Body() body: AIRequest): Promise<Intent> {
-    if (!this.anthropicApiKey) {
-      throw new Error("AI features not configured - ANTHROPIC_API_KEY missing");
+    console.log(`[AI] Generating intent for prompt: "${body.prompt}"`);
+
+    // FIRST: Try command database (no API key needed! FREE!)
+    const dbMatch = this.matchFromDatabase(body.prompt);
+    if (dbMatch) {
+      console.log(`[AI] ✅ MATCHED FROM DATABASE: ${dbMatch.capabilityId} (no AI needed)`);
+      return dbMatch;
     }
 
-    console.log(`[AI] Generating intent for prompt: ${body.prompt}`);
+    console.log(`[AI] ⚠️ No database match, falling back to AI...`);
+
+    // SECOND: Fall back to AI if configured
+    if (!this.anthropicApiKey) {
+      throw new Error(
+        "❌ Could not match command from database and ANTHROPIC_API_KEY not set for AI fallback. Command not recognized."
+      );
+    }
 
     const capabilities = this.getAvailableCapabilities();
     const systemPrompt = this.buildSystemPrompt(capabilities);
@@ -90,8 +102,181 @@ export class AIController {
     ];
   }
 
+  private matchFromDatabase(prompt: string): Intent | null {
+    // Import command database matching logic
+    const PATTERNS: Array<{ keywords: string[]; capability: string; extract: (s: string) => any }> = [
+      // System commands
+      {
+        keywords: ["cpu usage", "processor usage", "show cpu"],
+        capability: "system.cpu.usage",
+        extract: () => ({}),
+      },
+      {
+        keywords: ["memory usage", "ram usage", "show memory", "show ram"],
+        capability: "system.memory.usage",
+        extract: () => ({}),
+      },
+      {
+        keywords: ["disk usage", "disk space", "storage", "hard drive space"],
+        capability: "system.disk.usage",
+        extract: () => ({}),
+      },
+      {
+        keywords: ["system info", "system information", "computer info"],
+        capability: "system.info",
+        extract: () => ({}),
+      },
+      {
+        keywords: ["uptime", "how long running"],
+        capability: "system.uptime",
+        extract: () => ({}),
+      },
+      {
+        keywords: ["network interfaces", "show network", "ip address"],
+        capability: "system.network.interfaces",
+        extract: () => ({}),
+      },
+      // Process commands
+      {
+        keywords: ["list processes", "show processes", "running processes", "ps"],
+        capability: "process.list",
+        extract: () => ({}),
+      },
+      // App commands
+      {
+        keywords: ["list apps", "show apps", "installed apps"],
+        capability: "app.list",
+        extract: () => ({}),
+      },
+      {
+        keywords: ["running apps", "open apps"],
+        capability: "app.list_running",
+        extract: () => ({}),
+      },
+      // File commands
+      {
+        keywords: ["list files", "show files", "ls"],
+        capability: "file.list",
+        extract: (s) => {
+          const match = s.match(/in\s+([\w\/\.~]+)/);
+          return { path: match ? match[1] : ".", recursive: false };
+        },
+      },
+      // Screenshot
+      {
+        keywords: ["screenshot", "screen capture", "take screenshot"],
+        capability: "screenshot.capture",
+        extract: () => ({ path: `~/Desktop/screenshot-${Date.now()}.png` }),
+      },
+      // Clipboard
+      {
+        keywords: ["clipboard", "show clipboard", "paste"],
+        capability: "clipboard.read",
+        extract: () => ({}),
+      },
+      // Git commands
+      {
+        keywords: ["git status", "repository status", "git st"],
+        capability: "git.status",
+        extract: () => ({}),
+      },
+      {
+        keywords: ["git push", "push to remote", "push changes"],
+        capability: "git.push",
+        extract: () => ({ branch: "main", force: false }),
+      },
+      {
+        keywords: ["git pull", "pull from remote", "update from remote"],
+        capability: "git.pull",
+        extract: () => ({ rebase: false }),
+      },
+      {
+        keywords: ["git commit", "commit changes"],
+        capability: "git.commit",
+        extract: (s) => {
+          const message = s.match(/['"](.+?)['"]/)?.[1] || "Update";
+          return { message, all: false };
+        },
+      },
+      // Docker commands
+      {
+        keywords: ["docker ps", "list containers", "running containers"],
+        capability: "docker.ps",
+        extract: () => ({ all: false }),
+      },
+      {
+        keywords: ["docker images", "list images"],
+        capability: "docker.images",
+        extract: () => ({}),
+      },
+      {
+        keywords: ["docker logs", "container logs"],
+        capability: "docker.logs",
+        extract: (s) => {
+          const container = s.match(/logs?\s+([\w\-]+)/i)?.[1] || "";
+          return { container, follow: false };
+        },
+      },
+      // macOS specific
+      {
+        keywords: ["show hidden files", "reveal hidden files"],
+        capability: "macos.finder.show_hidden",
+        extract: () => ({}),
+      },
+      {
+        keywords: ["caffeinate", "prevent sleep"],
+        capability: "macos.power.management",
+        extract: () => ({ action: "caffeinate", duration: 3600 }),
+      },
+      {
+        keywords: ["purge memory", "clear ram", "free memory"],
+        capability: "macos.purge",
+        extract: () => ({}),
+      },
+      // Windows specific
+      {
+        keywords: ["battery report", "power report"],
+        capability: "windows.powercfg",
+        extract: () => ({ operation: "batteryreport" }),
+      },
+      {
+        keywords: ["system file checker", "sfc scan"],
+        capability: "windows.sfc",
+        extract: () => ({ operation: "scannow" }),
+      },
+      // Network diagnostics
+      {
+        keywords: ["traceroute", "trace route", "tracert"],
+        capability: "network.traceroute",
+        extract: (s) => {
+          const host = s.match(/(?:traceroute|trace)\s+([\w\.\-]+)/i)?.[1] || "google.com";
+          return { host };
+        },
+      },
+      {
+        keywords: ["netstat", "network connections", "listening ports"],
+        capability: "network.netstat",
+        extract: () => ({ listening: false }),
+      },
+    ];
+
+    const promptLower = prompt.toLowerCase();
+
+    for (const pattern of PATTERNS) {
+      if (pattern.keywords.some((kw) => promptLower.includes(kw))) {
+        return {
+          capabilityId: pattern.capability,
+          parameters: pattern.extract(prompt),
+          reasoning: `Matched from command database for: ${pattern.capability}`,
+        };
+      }
+    }
+
+    return null;
+  }
+
   private buildSystemPrompt(capabilities: string[]): string {
-    return `You are an AI agent orchestrator for CommandAI, a system automation platform.
+    return `You are an AI agent orchestrator for Comandr, a system automation platform.
 
 Your job is to convert natural language requests into structured intents that can be executed by the desktop agent.
 

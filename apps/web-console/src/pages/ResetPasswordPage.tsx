@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Button, Input } from "@commandai/ui-kit";
+import { Button, Input } from "@comandr/ui-kit";
 import { authApi, ApiError } from "../lib/api-client";
 
 export function ResetPasswordPage() {

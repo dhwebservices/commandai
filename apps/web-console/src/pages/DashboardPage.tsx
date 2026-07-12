@@ -1,5 +1,5 @@
 import { useAuth } from "../lib/auth-context";
-import { Button, Card } from "@commandai/ui-kit";
+import { Button, Card } from "@comandr/ui-kit";
 
 export function DashboardPage() {
   const { session, setSession } = useAuth();
@@ -11,7 +11,7 @@ export function DashboardPage() {
       <header className="dashboard-header">
         <div className="dashboard-header-content">
           <a href="/" className="dashboard-logo">
-            CommandAI
+            Comandr
           </a>
           <div className="dashboard-user">
             <span className="dashboard-user-info">User ID: {session.userId}</span>
@@ -24,7 +24,7 @@ export function DashboardPage() {
 
       <main className="dashboard-main">
         <div className="dashboard-welcome">
-          <h2>Welcome to CommandAI</h2>
+          <h2>Welcome to Comandr</h2>
           <p>Your intelligent automation platform for managing and orchestrating AI agents.</p>
         </div>
 

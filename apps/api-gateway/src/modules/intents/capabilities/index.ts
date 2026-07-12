@@ -1,4 +1,4 @@
-import type { Capability } from "@commandai/schema";
+import type { Capability } from "@comandr/schema";
 
 /**
  * Comprehensive capability registry for Mac and Windows system operations.

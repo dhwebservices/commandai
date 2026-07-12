@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { AuthService } from "./auth.service";
-import { ValidationError } from "@commandai/errors";
+import { ValidationError } from "@comandr/errors";
 
 function makeQueryBuilder(result: unknown) {
   const builder: any = {

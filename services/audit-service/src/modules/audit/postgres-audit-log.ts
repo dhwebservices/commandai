@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
-import type { AuditEvent } from "@commandai/schema";
-import { withTenantContext } from "@commandai/db";
+import type { AuditEvent } from "@comandr/schema";
+import { withTenantContext } from "@comandr/db";
 
 /**
  * Postgres-backed implementation, additive alongside the in-memory

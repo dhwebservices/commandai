@@ -3,6 +3,10 @@
 import { DesktopAgent } from "./agent.js";
 import type { Intent, ActionResult } from "./agent.js";
 
+// Export for use as a library
+export { DesktopAgent };
+export type { Intent, ActionResult };
+
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL || "http://localhost:3000";
 const POLL_INTERVAL = 5000; // Poll every 5 seconds
 

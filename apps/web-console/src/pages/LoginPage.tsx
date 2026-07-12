@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Button, Input } from "@commandai/ui-kit";
+import { Button, Input } from "@comandr/ui-kit";
 import { authApi, ApiError } from "../lib/api-client";
 import { useAuth } from "../lib/auth-context";
 
@@ -34,7 +34,7 @@ export function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>Log in to CommandAI</h1>
+        <h1>Log in to Comandr</h1>
         <form onSubmit={handleSubmit}>
           <Input
             label="Username"

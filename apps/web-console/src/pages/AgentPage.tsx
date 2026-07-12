@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Button, Card, Input } from "@commandai/ui-kit";
+import { Button, Card, Input } from "@comandr/ui-kit";
 import { useAuth } from "../lib/auth-context";
 
 interface Intent {
@@ -127,7 +127,7 @@ export function AgentPage() {
       <header className="dashboard-header">
         <div className="dashboard-header-content">
           <a href="/" className="dashboard-logo">
-            CommandAI
+            Comandr
           </a>
           <div className="dashboard-user">
             <span className="dashboard-user-info">Agent Dashboard</span>

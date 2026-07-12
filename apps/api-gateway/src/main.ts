@@ -3,7 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import { VersioningType } from "@nestjs/common";
 import { AppModule } from "./app.module";
 import { loadApiGatewayConfig } from "./config";
-import { createLogger } from "@commandai/logger";
+import { createLogger } from "@comandr/logger";
 import { AllExceptionsFilter } from "./common/all-exceptions.filter";
 
 async function bootstrap() {
@@ -11,7 +11,32 @@ async function bootstrap() {
   const logger = createLogger("api-gateway", config.LOG_LEVEL);
 
   const app = await NestFactory.create(AppModule);
-  app.enableCors(); // allow frontend to connect from different port
+
+  // CORS - Restrict to known origins
+  const allowedOrigins = [
+    "http://localhost:5173", // Local dev
+    "https://comandr.pages.dev", // Production
+    "https://comandr-web.pages.dev", // Production alt
+    process.env.WEB_APP_URL || "",
+  ].filter(Boolean);
+
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  });
+
+  // Security headers
+  app.use((req: any, res: any, next: any) => {
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    next();
+  });
+
   app.enableVersioning({ type: VersioningType.URI }); // every route versioned, Non-Negotiable #4
   app.useGlobalFilters(new AllExceptionsFilter()); // no error path exits unhandled, Architecture Principle #6
 

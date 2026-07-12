@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ValidationError, InternalError } from "@commandai/errors";
+import { ValidationError, InternalError } from "@comandr/errors";
 import { EmailService } from "./email.service";
 import { syntheticEmailFor, type SignupRequest, type LoginRequest } from "./auth.dto";
 

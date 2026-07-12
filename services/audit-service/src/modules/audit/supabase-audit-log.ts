@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ActionRecord, AuditEvent } from "@commandai/schema";
-import { InternalError } from "@commandai/errors";
+import type { ActionRecord, AuditEvent } from "@comandr/schema";
+import { InternalError } from "@comandr/errors";
 import type { AuditWriter, AuditReader } from "./audit-log";
 
 /**

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { evaluateIntent, assertAllowed } from "./evaluate";
-import { PolicyDeniedError } from "@commandai/errors";
-import type { Capability, Intent } from "@commandai/schema";
+import { PolicyDeniedError } from "@comandr/errors";
+import type { Capability, Intent } from "@comandr/schema";
 
 const readCapability: Capability = {
   id: "system.disk.read_usage",

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { IntentsController } from "../../src/modules/intents/intents.controller";
 import { inMemoryAuditLog } from "../../src/modules/intents/audit-log.provider";
-import { PolicyDeniedError } from "@commandai/errors";
+import { PolicyDeniedError } from "@comandr/errors";
 
 function makeIntentBody(capabilityId: string, reasoning = "User asked to check disk space.") {
   return {

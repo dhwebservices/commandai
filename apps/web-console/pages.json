@@ -1,0 +1,11 @@
+{
+  "name": "comandr-web",
+  "build": {
+    "command": "pnpm install && pnpm build",
+    "output": "dist"
+  },
+  "env": {
+    "NODE_VERSION": "20",
+    "VITE_API_GATEWAY_URL": "https://comandr-api.workers.dev"
+  }
+}

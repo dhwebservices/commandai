@@ -1,4 +1,4 @@
-import { AuditLog, SupabaseAuditLog, type AuditWriter, type AuditReader } from "@commandai/audit-service";
+import { AuditLog, SupabaseAuditLog, type AuditWriter, type AuditReader } from "@comandr/audit-service";
 import { createSupabaseAdminClient } from "../auth/supabase-admin.client";
 import { loadApiGatewayConfig } from "../../config";
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { AuditLog, recordTransition, findExecutedWithoutAudit } from "./audit-log";
-import type { ActionRecord } from "@commandai/schema";
+import type { ActionRecord } from "@comandr/schema";
 
 function makeAction(state: ActionRecord["state"] = "Installed"): ActionRecord {
   return {

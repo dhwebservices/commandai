@@ -1,4 +1,4 @@
-import type { Capability } from "@commandai/schema";
+import type { Capability } from "@comandr/schema";
 
 /**
  * Seed fixtures for local dev + tests. Deliberately includes a home user and

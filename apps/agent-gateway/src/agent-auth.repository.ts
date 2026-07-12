@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomBytes, createHash } from "node:crypto";
-import type { AgentEnrollmentToken, AgentCredential } from "@commandai/schema";
+import type { AgentEnrollmentToken, AgentCredential } from "@comandr/schema";
 
 /**
  * Repository for agent enrollment tokens and credentials.

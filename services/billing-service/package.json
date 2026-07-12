@@ -1,5 +1,5 @@
 {
-  "name": "@commandai/billing-service",
+  "name": "@comandr/billing-service",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@commandai/schema": "workspace:*"
+    "@comandr/schema": "workspace:*"
   },
   "devDependencies": {
     "vitest": "^2.0.0"
