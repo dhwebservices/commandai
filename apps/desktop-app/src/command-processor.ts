@@ -80,7 +80,7 @@ export class CommandProcessor {
       throw new Error(`Server match failed: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as any;
 
     if (data.matched && data.command) {
       return {
@@ -109,7 +109,7 @@ export class CommandProcessor {
       throw new Error(`AI match failed: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as any;
 
     // If AI returns system.help, it means AI is not available
     if (data.capabilityId === "system.help") {
