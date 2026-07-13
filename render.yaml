@@ -3,6 +3,8 @@ services:
     name: comandr-api
     env: docker
     dockerfilePath: ./Dockerfile
+    repo: https://github.com/dhwebservices/commandai
+    branch: main
     plan: free
     region: oregon
     envVars:
@@ -20,9 +22,13 @@ services:
         value: auth@dhwebsiteservices.co.uk
       - key: WEB_APP_URL
         value: https://ee725405.comandr.pages.dev
-      # Add these 3 secret keys manually in Render dashboard:
-      # - SUPABASE_ANON_KEY
-      # - SUPABASE_SERVICE_ROLE_KEY
-      # - RESEND_API_KEY
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
     healthCheckPath: /v1/health
     autoDeploy: true
