@@ -88,7 +88,7 @@ export class FileTransfersService {
    * Get file transfer by ID
    */
   async getTransferById(id: string) {
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase
       .from("file_transfers")
       .select("*")
       .eq("id", id)
@@ -105,7 +105,7 @@ export class FileTransfersService {
    * Get file transfer by transfer_id
    */
   async getTransferByTransferId(transferId: string) {
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase
       .from("file_transfers")
       .select("*")
       .eq("transfer_id", transferId)
@@ -122,7 +122,7 @@ export class FileTransfersService {
    * Get all transfers for a session
    */
   async getTransfersBySession(sessionId: string) {
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase
       .from("file_transfers")
       .select("*")
       .eq("session_id", sessionId)
@@ -139,7 +139,7 @@ export class FileTransfersService {
    * Get transfers by tenant
    */
   async getTransfersByTenant(tenantId: string, limit: number = 50) {
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase
       .from("file_transfers")
       .select("*")
       .eq("tenant_id", tenantId)
@@ -157,7 +157,7 @@ export class FileTransfersService {
    * Get active transfers (pending or transferring)
    */
   async getActiveTransfers(sessionId?: string) {
-    let query = this.supabase.client
+    let query = this.supabase
       .from("file_transfers")
       .select("*")
       .in("status", ["pending", "transferring"]);
@@ -189,7 +189,7 @@ export class FileTransfersService {
       updates.status = dto.status;
     }
 
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase
       .from("file_transfers")
       .update(updates)
       .eq("transfer_id", transferId)
@@ -221,7 +221,7 @@ export class FileTransfersService {
       updates.error_message = dto.errorMessage;
     }
 
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase
       .from("file_transfers")
       .update(updates)
       .eq("transfer_id", transferId)
@@ -239,7 +239,7 @@ export class FileTransfersService {
    * Cancel a transfer
    */
   async cancelTransfer(transferId: string) {
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase
       .from("file_transfers")
       .update({
         status: "cancelled",
@@ -261,7 +261,7 @@ export class FileTransfersService {
    * Get transfer statistics for a session
    */
   async getSessionTransferStats(sessionId: string) {
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase
       .from("file_transfers")
       .select("status, direction, file_size_bytes, bytes_transferred")
       .eq("session_id", sessionId);
@@ -292,7 +292,7 @@ export class FileTransfersService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
 
-    const { error } = await this.supabase.client
+    const { error } = await this.supabase
       .from("file_transfers")
       .delete()
       .in("status", ["completed", "failed", "cancelled"])
