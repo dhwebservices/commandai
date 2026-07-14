@@ -121,7 +121,7 @@ try {
 } catch (error) {
   console.warn("Auto-launch not available:", error);
 }
-const API_BASE = process.env.API_URL || "http://localhost:3000"; // Local dev server
+const API_BASE = process.env.API_URL || "https://comandr-api.onrender.com"; // Production API
 const WEB_APP_URL = process.env.WEB_APP_URL || "https://comandr.pages.dev"; // Cloudflare Pages
 
 class ComandrApp {
