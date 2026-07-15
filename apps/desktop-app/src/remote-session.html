@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Remote Session</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #1a1a1a;
+        color: #ffffff;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+
+      /* Toolbar */
+      .toolbar {
+        background: #2a2a2a;
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-bottom: 1px solid #3a3a3a;
+        flex-shrink: 0;
+      }
+
+      .toolbar-section {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .toolbar-divider {
+        width: 1px;
+        height: 24px;
+        background: #3a3a3a;
+      }
+
+      .toolbar-btn {
+        background: #3a3a3a;
+        border: none;
+        color: #ffffff;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: background 0.2s;
+      }
+
+      .toolbar-btn:hover {
+        background: #4a4a4a;
+      }
+
+      .toolbar-btn:active {
+        background: #2a2a2a;
+      }
+
+      .toolbar-btn.danger {
+        background: #d32f2f;
+      }
+
+      .toolbar-btn.danger:hover {
+        background: #c62828;
+      }
+
+      .toolbar-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #888;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #666;
+      }
+
+      .status-dot.connecting {
+        background: #ffa726;
+        animation: pulse 1.5s infinite;
+      }
+
+      .status-dot.connected {
+        background: #66bb6a;
+      }
+
+      .status-dot.disconnected {
+        background: #ef5350;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+
+      /* Video Container */
+      .video-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #remoteVideo {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+      }
+
+      .loading-overlay.hidden {
+        display: none;
+      }
+
+      .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #3a3a3a;
+        border-top-color: #2196f3;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .loading-text {
+        font-size: 14px;
+        color: #888;
+      }
+
+      /* Quality Settings Panel */
+      .quality-panel {
+        position: absolute;
+        top: 60px;
+        right: 16px;
+        background: #2a2a2a;
+        border: 1px solid #3a3a3a;
+        border-radius: 8px;
+        padding: 16px;
+        min-width: 200px;
+        display: none;
+      }
+
+      .quality-panel.visible {
+        display: block;
+      }
+
+      .quality-panel h3 {
+        font-size: 14px;
+        margin-bottom: 12px;
+        color: #fff;
+      }
+
+      .quality-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+
+      .quality-option:hover {
+        background: #3a3a3a;
+      }
+
+      .quality-option input[type="radio"] {
+        margin: 0;
+      }
+
+      /* Connection Stats */
+      .stats-panel {
+        position: absolute;
+        top: 60px;
+        left: 16px;
+        background: rgba(0, 0, 0, 0.8);
+        border: 1px solid #3a3a3a;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 12px;
+        font-family: monospace;
+        display: none;
+      }
+
+      .stats-panel.visible {
+        display: block;
+      }
+
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 4px;
+      }
+
+      .stat-label {
+        color: #888;
+      }
+
+      .stat-value {
+        color: #fff;
+      }
+
+      /* Error Message */
+      .error-message {
+        background: #d32f2f;
+        color: #fff;
+        padding: 12px 16px;
+        text-align: center;
+        font-size: 13px;
+        display: none;
+      }
+
+      .error-message.visible {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <!-- Connection Status -->
+      <div class="toolbar-section">
+        <div class="status-indicator">
+          <div id="statusDot" class="status-dot connecting"></div>
+          <span id="statusText">Connecting...</span>
+        </div>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Display Controls -->
+      <div class="toolbar-section">
+        <button class="toolbar-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+          </svg>
+          Fullscreen
+        </button>
+
+        <button class="toolbar-btn" onclick="toggleQualityPanel()" title="Quality Settings">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          Quality
+        </button>
+
+        <button class="toolbar-btn" onclick="toggleStats()" title="Connection Stats">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          Stats
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Input Controls -->
+      <div class="toolbar-section">
+        <button class="toolbar-btn" onclick="sendCtrlAltDel()" title="Send Ctrl+Alt+Del">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+          </svg>
+          Ctrl+Alt+Del
+        </button>
+
+        <label class="toolbar-btn" style="cursor: pointer;">
+          <input type="checkbox" id="clipboardSync" onchange="toggleClipboard()" style="margin-right: 4px;" checked>
+          Clipboard Sync
+        </label>
+      </div>
+
+      <div style="flex: 1;"></div>
+
+      <!-- Session Controls -->
+      <div class="toolbar-section">
+        <button class="toolbar-btn danger" onclick="disconnectSession()" title="Disconnect">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          Disconnect
+        </button>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div id="errorMessage" class="error-message"></div>
+
+    <!-- Video Container -->
+    <div class="video-container">
+      <video id="remoteVideo" autoplay playsinline></video>
+
+      <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Establishing connection...</div>
+      </div>
+
+      <!-- Quality Settings Panel -->
+      <div id="qualityPanel" class="quality-panel">
+        <h3>Video Quality</h3>
+        <label class="quality-option">
+          <input type="radio" name="quality" value="low" onchange="changeQuality('low')">
+          Low (720p @ 15fps)
+        </label>
+        <label class="quality-option">
+          <input type="radio" name="quality" value="medium" onchange="changeQuality('medium')" checked>
+          Medium (1080p @ 30fps)
+        </label>
+        <label class="quality-option">
+          <input type="radio" name="quality" value="high" onchange="changeQuality('high')">
+          High (1080p @ 60fps)
+        </label>
+        <label class="quality-option">
+          <input type="radio" name="quality" value="ultra" onchange="changeQuality('ultra')">
+          Ultra (4K @ 60fps)
+        </label>
+      </div>
+
+      <!-- Stats Panel -->
+      <div id="statsPanel" class="stats-panel">
+        <div class="stat-row">
+          <span class="stat-label">Latency:</span>
+          <span class="stat-value" id="statLatency">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Bitrate:</span>
+          <span class="stat-value" id="statBitrate">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">FPS:</span>
+          <span class="stat-value" id="statFps">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Resolution:</span>
+          <span class="stat-value" id="statResolution">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Packet Loss:</span>
+          <span class="stat-value" id="statPacketLoss">--</span>
+        </div>
+      </div>
+    </div>
+
+    <script src="remote-session.js"></script>
+  </body>
+</html>

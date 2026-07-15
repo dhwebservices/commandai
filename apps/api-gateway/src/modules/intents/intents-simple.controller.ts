@@ -71,6 +71,16 @@ export class IntentsSimpleController {
 
   @Post(":id/result")
   async reportResult(@Param("id") id: string, @Body() result: ActionResult): Promise<void> {
+    console.log(`[Intents] Receiving result for ${id}`);
+    console.log(`[Intents] Result status:`, result.status);
+    console.log(`[Intents] Result keys:`, Object.keys(result));
+    console.log(`[Intents] Result.result type:`, typeof result.result);
+    console.log(`[Intents] Result.result is array:`, Array.isArray(result.result));
+    if (Array.isArray(result.result)) {
+      console.log(`[Intents] Result.result length:`, result.result.length);
+    }
+    console.log(`[Intents] Full result preview:`, JSON.stringify(result).substring(0, 500));
+
     const intent = this.intents.get(id);
     if (intent) {
       intent.status = result.status;
@@ -79,7 +89,7 @@ export class IntentsSimpleController {
 
     this.results.set(id, result);
 
-    console.log(`[Intents] Result for ${id}: ${result.status}`);
+    console.log(`[Intents] Result stored successfully for ${id}`);
   }
 
   @Get(":id/result")

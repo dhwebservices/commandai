@@ -23,6 +23,12 @@ export function LoginPage() {
         refreshToken: result.refreshToken,
         userId: result.userId,
       });
+
+      // Notify desktop app if running in Electron
+      if ((window as any).comandrDesktop) {
+        (window as any).comandrDesktop.onLogin(result.userId, result.accessToken);
+      }
+
       navigate("/");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");

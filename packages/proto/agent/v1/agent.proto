@@ -34,6 +34,43 @@ message EnrollResponse {
   string rotates_at = 4;
 }
 
+// Remote session signaling messages for WebRTC coordination
+message RemoteSessionMessage {
+  string session_id = 1;
+  oneof message_type {
+    SessionOffer offer = 2;
+    SessionAnswer answer = 3;
+    ICECandidate ice_candidate = 4;
+    SessionDisconnect disconnect = 5;
+  }
+}
+
+message SessionOffer {
+  string sdp = 1;
+  SessionConfig config = 2;
+}
+
+message SessionAnswer {
+  string sdp = 1;
+}
+
+message ICECandidate {
+  string candidate = 1;
+  string sdp_mid = 2;
+  int32 sdp_m_line_index = 3;
+}
+
+message SessionDisconnect {
+  string reason = 1;
+}
+
+message SessionConfig {
+  bool enable_video = 1;
+  bool enable_audio = 2;
+  bool enable_control = 3;
+  string video_quality = 4; // "low", "medium", "high", "ultra"
+}
+
 service AgentChannel {
   // One-time enrollment: exchange enrollment token for long-lived credential.
   // Agent presents token + client cert via mTLS; receives agent_id in response.
@@ -44,6 +81,9 @@ service AgentChannel {
 
   // Agent pushes status/telemetry back to cloud.
   rpc StreamStatus(stream ActionStatus) returns (stream Ack);
+
+  // Bidirectional streaming for WebRTC signaling (offers, answers, ICE candidates)
+  rpc StreamRemoteSession(stream RemoteSessionMessage) returns (stream RemoteSessionMessage);
 }
 
 message Ack {

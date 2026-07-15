@@ -15,12 +15,21 @@ export class CommandsService {
     // 5. Fuzzy pattern match
 
     // Fetch all active commands for this tenant (includes global + tenant-specific)
-    const { data: commands, error } = await this.supabase
+    // Note: Using two separate queries to avoid SQL injection with .or() string interpolation
+    const { data: globalCommands } = await this.supabase
       .from("commands")
       .select("id, pattern, aliases, description, capability_id, parameters")
       .eq("is_active", true)
-      .or(`tenant_id.is.null,tenant_id.eq.${tenantId}`)
-      .order("tenant_id", { ascending: false }); // Tenant-specific first
+      .is("tenant_id", null);
+
+    const { data: tenantCommands, error } = await this.supabase
+      .from("commands")
+      .select("id, pattern, aliases, description, capability_id, parameters")
+      .eq("is_active", true)
+      .eq("tenant_id", tenantId);
+
+    // Combine results with tenant-specific first
+    const commands = [...(tenantCommands || []), ...(globalCommands || [])];
 
     if (error || !commands) {
       console.error("[Commands] Failed to fetch commands:", error);

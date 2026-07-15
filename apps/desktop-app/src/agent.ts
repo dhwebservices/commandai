@@ -34,8 +34,15 @@ export class DesktopAgent {
     try {
       console.log(`[Agent] Executing intent ${intent.id}: ${intent.capabilityId}`);
       console.log(`[Agent] Reasoning: ${intent.reasoning}`);
+      console.log(`[Agent] Parameters:`, JSON.stringify(intent.parameters));
 
       const result = await this.executeCapability(intent.capabilityId, intent.parameters);
+
+      console.log(`[Agent] Execution completed for ${intent.id}`);
+      console.log(`[Agent] Result type:`, typeof result);
+      console.log(`[Agent] Result is array:`, Array.isArray(result));
+      console.log(`[Agent] Result length:`, Array.isArray(result) ? result.length : 'N/A');
+      console.log(`[Agent] Result preview:`, JSON.stringify(result).substring(0, 200));
 
       const completedAt = new Date().toISOString();
 
@@ -95,8 +102,9 @@ export class DesktopAgent {
   }
 
   private async executeClipboard(capabilityId: string, parameters: Record<string, any>): Promise<any> {
-    const { exec } = await import("child_process");
+    const { spawn } = await import("child_process");
     const { promisify } = await import("util");
+    const { exec } = await import("child_process");
     const execAsync = promisify(exec);
 
     if (capabilityId === "clipboard.read") {
@@ -111,12 +119,27 @@ export class DesktopAgent {
         return { text: stdout };
       }
     } else if (capabilityId === "clipboard.write") {
+      // FIX: Use spawn to avoid command injection
       if (process.platform === "darwin") {
-        await execAsync(`echo "${parameters.text}" | pbcopy`);
+        const pbcopy = spawn("pbcopy");
+        pbcopy.stdin.write(parameters.text);
+        pbcopy.stdin.end();
+        await new Promise((resolve, reject) => {
+          pbcopy.on("close", resolve);
+          pbcopy.on("error", reject);
+        });
       } else if (process.platform === "win32") {
-        await execAsync(`powershell Set-Clipboard -Value "${parameters.text}"`);
+        // Escape single quotes for PowerShell
+        const escapedText = parameters.text.replace(/'/g, "''");
+        await execAsync(`powershell Set-Clipboard -Value '${escapedText}'`);
       } else {
-        await execAsync(`echo "${parameters.text}" | xclip -selection clipboard`);
+        const xclip = spawn("xclip", ["-selection", "clipboard"]);
+        xclip.stdin.write(parameters.text);
+        xclip.stdin.end();
+        await new Promise((resolve, reject) => {
+          xclip.on("close", resolve);
+          xclip.on("error", reject);
+        });
       }
       return { success: true };
     }
@@ -125,19 +148,50 @@ export class DesktopAgent {
   }
 
   private async executeScreenshot(capabilityId: string, parameters: Record<string, any>): Promise<any> {
-    const { exec } = await import("child_process");
-    const { promisify } = await import("util");
-    const execAsync = promisify(exec);
+    const { spawn } = await import("child_process");
+    const path = await import("path");
 
     if (capabilityId === "screenshot.capture") {
+      // FIX: Validate path contains no shell metacharacters
+      if (/[;&|$`<>(){}[\]!\\]/.test(parameters.path)) {
+        throw new Error('Invalid characters in path');
+      }
+
+      // Validate path is absolute
+      if (!path.isAbsolute(parameters.path)) {
+        throw new Error('Path must be absolute');
+      }
+
       if (process.platform === "darwin") {
-        await execAsync(`screencapture "${parameters.path}"`);
+        // Use spawn with array args to avoid injection
+        const screencapture = spawn("screencapture", ["-x", parameters.path]);
+        await new Promise((resolve, reject) => {
+          screencapture.on("close", (code) => {
+            if (code === 0) resolve(null);
+            else reject(new Error(`screencapture exited with code ${code}`));
+          });
+          screencapture.on("error", reject);
+        });
       } else if (process.platform === "win32") {
+        // For Windows, use a more secure PowerShell approach
+        const escapedPath = parameters.path.replace(/'/g, "''");
+        const { exec } = await import("child_process");
+        const { promisify } = await import("util");
+        const execAsync = promisify(exec);
+
         await execAsync(
-          `powershell Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen | Out-Null; $screen = [System.Windows.Forms.Screen]::PrimaryScreen; $bounds = $screen.Bounds; $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height; $graphics = [System.Drawing.Graphics]::FromImage($bitmap); $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size); $bitmap.Save("${parameters.path}"); $bitmap.Dispose(); $graphics.Dispose()`,
+          `powershell Add-Type -AssemblyName System.Windows.Forms,System.Drawing; $screen = [System.Windows.Forms.Screen]::PrimaryScreen; $bounds = $screen.Bounds; $bitmap = New-Object System.Drawing.Bitmap $bounds.Width,$bounds.Height; $graphics = [System.Drawing.Graphics]::FromImage($bitmap); $graphics.CopyFromScreen($bounds.Location,[System.Drawing.Point]::Empty,$bounds.Size); $bitmap.Save('${escapedPath}'); $bitmap.Dispose(); $graphics.Dispose()`,
         );
       } else {
-        await execAsync(`scrot "${parameters.path}"`);
+        // Linux: use spawn
+        const scrot = spawn("scrot", [parameters.path]);
+        await new Promise((resolve, reject) => {
+          scrot.on("close", (code) => {
+            if (code === 0) resolve(null);
+            else reject(new Error(`scrot exited with code ${code}`));
+          });
+          scrot.on("error", reject);
+        });
       }
       return { success: true, path: parameters.path };
     }
@@ -191,5 +245,41 @@ export class DesktopAgent {
       // Screenshot
       "screenshot.capture",
     ];
+  }
+
+  // FIX: Per-session signaling callbacks instead of global
+  private signalHandlers: Map<string, (message: any) => void> = new Map();
+
+  // Remote session methods (stubs for desktop-app agent)
+  getActiveRemoteSessions(): string[] {
+    // This agent doesn't manage remote sessions directly
+    // Remote sessions are handled by the main process and desktop-agent
+    return [];
+  }
+
+  setRemoteSignalingCallback(callback: ((message: any) => void) | null): void {
+    // Deprecated: Use addRemoteSignalingCallback instead
+    console.warn('[Agent] setRemoteSignalingCallback is deprecated, use add/remove per session');
+  }
+
+  addRemoteSignalingCallback(sessionId: string, callback: (message: any) => void): void {
+    this.signalHandlers.set(sessionId, callback);
+    console.log(`[Agent] Added signaling handler for session ${sessionId}`);
+  }
+
+  removeRemoteSignalingCallback(sessionId: string): void {
+    this.signalHandlers.delete(sessionId);
+    console.log(`[Agent] Removed signaling handler for session ${sessionId}`);
+  }
+
+  handleRemoteSignalingMessage(message: any): void {
+    const sessionId = message.sessionId || message.session_id;
+    const handler = this.signalHandlers.get(sessionId);
+
+    if (handler) {
+      handler(message);
+    } else {
+      console.warn(`[Agent] No handler for session ${sessionId}`);
+    }
   }
 }

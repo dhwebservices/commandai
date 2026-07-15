@@ -959,6 +959,151 @@ export const EXTENDED_COMMANDS: ExtendedCommandPattern[] = [
     platforms: ['mac', 'linux'],
     category: 'permissions',
     examples: ["chown user:group file.txt", "change owner of /var/www"]
+  },
+
+  // =============== STORAGE MANAGEMENT ===============
+  {
+    patterns: ["clean temporary files", "clean temp files", "delete temp files", "clear temporary", "clear temp"],
+    capabilityId: "system.storage.clean_temp",
+    extractParams: () => ({}),
+    description: "Clean temporary files",
+    riskLevel: 'warning',
+    requiresConfirmation: true,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'storage',
+    examples: ["clean temporary files", "clear temp"]
+  },
+  {
+    patterns: ["empty trash", "clear trash", "delete trash", "empty recycle bin"],
+    capabilityId: "system.storage.empty_trash",
+    extractParams: () => ({}),
+    description: "Empty trash/recycle bin",
+    riskLevel: 'warning',
+    requiresConfirmation: true,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'storage',
+    examples: ["empty trash", "clear recycle bin"]
+  },
+  {
+    patterns: ["find large files", "show large files", "large files", "big files", "find big files"],
+    capabilityId: "system.storage.find_large_files",
+    extractParams: (input) => {
+      const path = input.match(/(?:in|at)\s+([~\/][\w\/\-\.]+)/i)?.[1] || "~";
+      const minSize = input.match(/(\d+)\s*(?:mb|megabytes?)/i)?.[1] || "100";
+      return { path, minSize: parseInt(minSize) };
+    },
+    description: "Find large files on disk",
+    riskLevel: 'safe',
+    requiresConfirmation: false,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'storage',
+    examples: ["find large files", "show files larger than 500mb"]
+  },
+  {
+    patterns: ["analyze disk usage", "analyze storage", "disk usage analysis", "storage analysis", "show disk usage"],
+    capabilityId: "system.storage.analyze_usage",
+    extractParams: (input) => {
+      const path = input.match(/(?:of|in|at)\s+([~\/][\w\/\-\.]+)/i)?.[1] || "~";
+      return { path };
+    },
+    description: "Analyze disk usage by directory",
+    riskLevel: 'safe',
+    requiresConfirmation: false,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'storage',
+    examples: ["analyze disk usage", "show storage analysis of ~/Documents"]
+  },
+
+  // =============== NETWORK MANAGEMENT ===============
+  {
+    patterns: ["restart wifi", "restart wi-fi", "reset wifi", "toggle wifi", "wifi restart"],
+    capabilityId: "network.wifi.restart",
+    extractParams: () => ({}),
+    description: "Restart Wi-Fi adapter",
+    riskLevel: 'warning',
+    requiresConfirmation: true,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'network',
+    examples: ["restart wifi", "reset wi-fi"]
+  },
+  {
+    patterns: ["flush dns", "flush dns cache", "clear dns", "reset dns", "dns flush"],
+    capabilityId: "network.dns.flush",
+    extractParams: () => ({}),
+    description: "Flush DNS cache",
+    riskLevel: 'safe',
+    requiresConfirmation: false,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'network',
+    examples: ["flush dns", "clear dns cache"]
+  },
+  {
+    patterns: ["renew ip", "renew ip address", "refresh ip", "get new ip", "dhcp renew"],
+    capabilityId: "network.ip.renew",
+    extractParams: () => ({}),
+    description: "Renew IP address",
+    riskLevel: 'warning',
+    requiresConfirmation: true,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'network',
+    examples: ["renew ip address", "refresh dhcp"]
+  },
+  {
+    patterns: ["test internet connection", "test connection", "check internet", "internet test", "connection test"],
+    capabilityId: "network.test_connection",
+    extractParams: () => ({}),
+    description: "Test internet connectivity",
+    riskLevel: 'safe',
+    requiresConfirmation: false,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'network',
+    examples: ["test internet connection", "check if internet is working"]
+  },
+
+  // =============== SECURITY MANAGEMENT ===============
+  {
+    patterns: ["enable firewall", "turn on firewall", "activate firewall", "firewall on"],
+    capabilityId: "security.firewall.enable",
+    extractParams: () => ({}),
+    description: "Enable system firewall",
+    riskLevel: 'warning',
+    requiresConfirmation: true,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'security',
+    examples: ["enable firewall", "turn on firewall"]
+  },
+  {
+    patterns: ["scan for malware", "scan for threats", "malware scan", "virus scan", "security scan"],
+    capabilityId: "security.scan.malware",
+    extractParams: () => ({}),
+    description: "Scan system for malware and threats",
+    riskLevel: 'safe',
+    requiresConfirmation: false,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'security',
+    examples: ["scan for malware", "run security scan"]
+  },
+  {
+    patterns: ["check for updates", "system updates", "check updates", "software updates"],
+    capabilityId: "system.updates.check",
+    extractParams: () => ({}),
+    description: "Check for system updates",
+    riskLevel: 'safe',
+    requiresConfirmation: false,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'security',
+    examples: ["check for updates", "check system updates"]
+  },
+  {
+    patterns: ["view security logs", "security logs", "show security logs", "system logs"],
+    capabilityId: "security.logs.view",
+    extractParams: () => ({}),
+    description: "View system security logs",
+    riskLevel: 'safe',
+    requiresConfirmation: false,
+    platforms: ['mac', 'windows', 'linux'],
+    category: 'security',
+    examples: ["view security logs", "show system logs"]
   }
 ];
 

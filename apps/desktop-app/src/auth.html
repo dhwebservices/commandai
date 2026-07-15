@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Comandr - Authentication</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      background: #0D0D0D;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+      color: #E5E5E5;
+      padding: 2rem;
+    }
+
+    .background {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle at 50% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .auth-container {
+      background: #171717;
+      border: 1px solid #2B2B2B;
+      border-radius: 12px;
+      padding: 3rem 2.5rem;
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      z-index: 1;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .logo {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: #A3A3A3;
+      margin-bottom: 2rem;
+      font-weight: 500;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #A3A3A3;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      background: #0D0D0D;
+      border: 1px solid #2B2B2B;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #FFFFFF;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #525252;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #3B82F6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 0.875rem;
+      background: #3B82F6;
+      border: none;
+      border-radius: 8px;
+      color: #FFFFFF;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-top: 0.5rem;
+    }
+
+    .btn-primary:hover { background: #2563EB; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 0.875rem;
+      background: transparent;
+      border: 1px solid #2B2B2B;
+      border-radius: 8px;
+      color: #E5E5E5;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-top: 0.75rem;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: #404040;
+    }
+
+    .error, .success, .info {
+      padding: 0.875rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    .error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #EF4444;
+    }
+
+    .success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      color: #22C55E;
+    }
+
+    .info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      color: #3B82F6;
+    }
+
+    .links {
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+
+    .link {
+      color: #3B82F6;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.15s;
+      cursor: pointer;
+    }
+
+    .link:hover { color: #2563EB; }
+
+    .divider {
+      margin: 0 0.75rem;
+      color: #525252;
+      font-size: 0.875rem;
+    }
+
+    .account-types {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .account-type-card {
+      padding: 1.25rem;
+      background: #0D0D0D;
+      border: 2px solid #2B2B2B;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .account-type-card:hover { border-color: #404040; }
+    .account-type-card.selected {
+      border-color: #3B82F6;
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .account-type-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .account-type-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #E5E5E5;
+      margin-bottom: 0.25rem;
+    }
+
+    .account-type-desc {
+      font-size: 0.7rem;
+      color: #737373;
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .back-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #3B82F6;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 1.5rem;
+      transition: color 0.15s;
+    }
+
+    .back-button:hover { color: #2563EB; }
+
+    .help-text {
+      font-size: 0.75rem;
+      color: #737373;
+      margin-top: 0.25rem;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+      margin-top: 0.25rem;
+    }
+
+    .checkbox-group label {
+      text-transform: none;
+      font-size: 0.875rem;
+      font-weight: 400;
+      color: #A3A3A3;
+    }
+  </style>
+</head>
+<body>
+  <div class="background"></div>
+
+  <div class="auth-container">
+    <!-- LOGIN VIEW -->
+    <div id="loginView" class="view active">
+      <div class="logo">Comandr</div>
+      <div class="subtitle">Welcome back. Sign in to continue.</div>
+
+      <form id="loginForm">
+        <div id="loginError"></div>
+
+        <div class="form-group">
+          <label for="loginUsername">Username</label>
+          <input type="text" id="loginUsername" placeholder="Enter your username" required />
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter your password" required />
+        </div>
+
+        <button type="submit" class="btn-primary" id="loginBtn">Sign In</button>
+      </form>
+
+      <div class="links">
+        <a class="link" id="showForgotPassword">Forgot password?</a>
+        <span class="divider">•</span>
+        <a class="link" id="showSignup">Create account</a>
+        <span class="divider">•</span>
+        <a class="link" id="showJoinOrg">Join organization</a>
+      </div>
+    </div>
+
+    <!-- SIGNUP - ACCOUNT TYPE SELECTION -->
+    <div id="signupTypeView" class="view">
+      <div class="back-button" id="signupTypeBack">← Back to login</div>
+
+      <div class="logo">Create Account</div>
+      <div class="subtitle">Choose your account type to get started</div>
+
+      <div class="account-types">
+        <div class="account-type-card" data-type="personal">
+          <div class="account-type-icon">👤</div>
+          <div class="account-type-title">Personal</div>
+          <div class="account-type-desc">For individual use</div>
+        </div>
+        <div class="account-type-card" data-type="organization">
+          <div class="account-type-icon">🏢</div>
+          <div class="account-type-title">Organization</div>
+          <div class="account-type-desc">For teams & businesses</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNUP - PERSONAL ACCOUNT -->
+    <div id="signupPersonalView" class="view">
+      <div class="back-button" id="signupPersonalBack">← Back</div>
+
+      <div class="logo">Personal Account</div>
+      <div class="subtitle">Create your Comandr account</div>
+
+      <form id="signupPersonalForm">
+        <div id="signupPersonalError"></div>
+
+        <div class="form-group">
+          <label for="personalUsername">Username</label>
+          <input type="text" id="personalUsername" placeholder="Choose a username" required />
+          <div class="help-text">This will be your unique identifier</div>
+        </div>
+
+        <div class="form-group">
+          <label for="personalEmail">Email</label>
+          <input type="email" id="personalEmail" placeholder="your@email.com" required />
+        </div>
+
+        <div class="form-group">
+          <label for="personalPassword">Password</label>
+          <input type="password" id="personalPassword" placeholder="Create a strong password" required />
+          <div class="help-text">Minimum 8 characters</div>
+        </div>
+
+        <div class="form-group">
+          <label for="personalFullName">Full Name</label>
+          <input type="text" id="personalFullName" placeholder="Your full name" required />
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="personalTerms" required />
+          <label for="personalTerms">I agree to the <a href="#" onclick="event.preventDefault(); require('electron').shell.openExternal('https://comandr.com/terms')" style="color: #3b82f6; text-decoration: underline;">Terms of Service</a> and <a href="#" onclick="event.preventDefault(); require('electron').shell.openExternal('https://comandr.com/privacy')" style="color: #3b82f6; text-decoration: underline;">Privacy Policy</a></label>
+        </div>
+
+        <button type="submit" class="btn-primary" id="signupPersonalBtn">Create Account</button>
+      </form>
+    </div>
+
+    <!-- SIGNUP - ORGANIZATION -->
+    <div id="signupOrgView" class="view">
+      <div class="back-button" id="signupOrgBack">← Back</div>
+
+      <div class="logo">Organization Account</div>
+      <div class="subtitle">Set up your organization on Comandr</div>
+
+      <form id="signupOrgForm">
+        <div id="signupOrgError"></div>
+
+        <div class="form-group">
+          <label for="orgName">Organization Name</label>
+          <input type="text" id="orgName" placeholder="Your company name" required />
+        </div>
+
+        <div class="form-group">
+          <label for="orgType">Organization Type</label>
+          <select id="orgType" required>
+            <option value="">Select type...</option>
+            <option value="business">Small Business</option>
+            <option value="enterprise">Enterprise</option>
+            <option value="nonprofit">Non-Profit</option>
+            <option value="education">Education</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="orgSize">Team Size</label>
+          <select id="orgSize">
+            <option value="1-10">1-10 people</option>
+            <option value="11-50">11-50 people</option>
+            <option value="51-200">51-200 people</option>
+            <option value="201+">201+ people</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="orgIndustry">Industry</label>
+          <input type="text" id="orgIndustry" placeholder="e.g., Technology, Healthcare" />
+        </div>
+
+        <div class="form-group">
+          <label for="orgDescription">Description (Optional)</label>
+          <textarea id="orgDescription" placeholder="Tell us about your organization"></textarea>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #2B2B2B; margin: 2rem 0;" />
+
+        <div class="subtitle">Admin Account Details</div>
+
+        <div class="form-group">
+          <label for="orgAdminUsername">Your Username</label>
+          <input type="text" id="orgAdminUsername" placeholder="Choose a username" required />
+        </div>
+
+        <div class="form-group">
+          <label for="orgAdminEmail">Your Email</label>
+          <input type="email" id="orgAdminEmail" placeholder="admin@company.com" required />
+        </div>
+
+        <div class="form-group">
+          <label for="orgAdminPassword">Password</label>
+          <input type="password" id="orgAdminPassword" placeholder="Create a strong password" required />
+        </div>
+
+        <div class="form-group">
+          <label for="orgAdminFullName">Your Full Name</label>
+          <input type="text" id="orgAdminFullName" placeholder="Your full name" required />
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="orgTerms" required />
+          <label for="orgTerms">I agree to the <a href="#" onclick="event.preventDefault(); require('electron').shell.openExternal('https://comandr.com/terms')" style="color: #3b82f6; text-decoration: underline;">Terms of Service</a> and <a href="#" onclick="event.preventDefault(); require('electron').shell.openExternal('https://comandr.com/privacy')" style="color: #3b82f6; text-decoration: underline;">Privacy Policy</a></label>
+        </div>
+
+        <button type="submit" class="btn-primary" id="signupOrgBtn">Create Organization</button>
+      </form>
+    </div>
+
+    <!-- FORGOT PASSWORD -->
+    <div id="forgotPasswordView" class="view">
+      <div class="back-button" id="forgotPasswordBack">← Back to login</div>
+
+      <div class="logo">Reset Password</div>
+      <div class="subtitle">Enter your username to receive reset instructions</div>
+
+      <form id="forgotPasswordForm">
+        <div id="forgotPasswordMsg"></div>
+
+        <div class="form-group">
+          <label for="resetUsername">Username</label>
+          <input type="text" id="resetUsername" placeholder="your_username" required />
+          <div class="help-text">We'll send password reset instructions to your registered email</div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="resetBtn">Send Reset Link</button>
+      </form>
+    </div>
+
+    <!-- JOIN ORGANIZATION -->
+    <div id="joinOrgView" class="view">
+      <div class="back-button" id="joinOrgBack">← Back to login</div>
+
+      <div class="logo">Join Organization</div>
+      <div class="subtitle">Enter the invitation code from your organization</div>
+
+      <form id="joinOrgForm">
+        <div id="joinOrgError"></div>
+
+        <div class="form-group">
+          <label for="inviteCode">Invitation Code</label>
+          <input type="text" id="inviteCode" placeholder="Enter 6-digit code" required />
+          <div class="help-text">Check your email for the invitation code</div>
+        </div>
+
+        <div class="form-group">
+          <label for="joinUsername">Choose Username</label>
+          <input type="text" id="joinUsername" placeholder="Your username" required />
+        </div>
+
+        <div class="form-group">
+          <label for="joinEmail">Your Email</label>
+          <input type="email" id="joinEmail" placeholder="your@email.com" required />
+        </div>
+
+        <div class="form-group">
+          <label for="joinPassword">Create Password</label>
+          <input type="password" id="joinPassword" placeholder="Create a strong password" required />
+        </div>
+
+        <div class="form-group">
+          <label for="joinFullName">Full Name</label>
+          <input type="text" id="joinFullName" placeholder="Your full name" required />
+        </div>
+
+        <button type="submit" class="btn-primary" id="joinOrgBtn">Join Organization</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    // View management
+    function showView(viewId) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+    }
+
+    // Login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      document.getElementById('loginBtn').disabled = true;
+      document.getElementById('loginBtn').textContent = 'Signing in...';
+      document.getElementById('loginError').innerHTML = '';
+
+      try {
+        await ipcRenderer.invoke('login', { username, password });
+      } catch (err) {
+        document.getElementById('loginError').innerHTML = `<div class="error">${err.message}</div>`;
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('loginBtn').textContent = 'Sign In';
+      }
+    });
+
+    // Navigation
+    document.getElementById('showSignup').addEventListener('click', () => showView('signupTypeView'));
+    document.getElementById('showForgotPassword').addEventListener('click', () => showView('forgotPasswordView'));
+    document.getElementById('showJoinOrg').addEventListener('click', () => showView('joinOrgView'));
+
+    document.getElementById('signupTypeBack').addEventListener('click', () => showView('loginView'));
+    document.getElementById('signupPersonalBack').addEventListener('click', () => showView('signupTypeView'));
+    document.getElementById('signupOrgBack').addEventListener('click', () => showView('signupTypeView'));
+    document.getElementById('forgotPasswordBack').addEventListener('click', () => showView('loginView'));
+    document.getElementById('joinOrgBack').addEventListener('click', () => showView('loginView'));
+
+    // Account type selection
+    document.querySelectorAll('.account-type-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const type = card.dataset.type;
+        document.querySelectorAll('.account-type-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+
+        setTimeout(() => {
+          showView(type === 'personal' ? 'signupPersonalView' : 'signupOrgView');
+        }, 200);
+      });
+    });
+
+    // Personal signup
+    document.getElementById('signupPersonalForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        username: document.getElementById('personalUsername').value.trim(),
+        contactEmail: document.getElementById('personalEmail').value.trim(),
+        password: document.getElementById('personalPassword').value,
+        fullName: document.getElementById('personalFullName').value.trim(),
+        accountType: 'personal'
+      };
+
+      document.getElementById('signupPersonalBtn').disabled = true;
+      document.getElementById('signupPersonalBtn').textContent = 'Creating account...';
+      document.getElementById('signupPersonalError').innerHTML = '';
+
+      try {
+        await ipcRenderer.invoke('signup', data);
+        document.getElementById('signupPersonalError').innerHTML =
+          `<div class="success">Account created! Signing you in...</div>`;
+        setTimeout(() => showView('loginView'), 2000);
+      } catch (err) {
+        document.getElementById('signupPersonalError').innerHTML =
+          `<div class="error">${err.message}</div>`;
+        document.getElementById('signupPersonalBtn').disabled = false;
+        document.getElementById('signupPersonalBtn').textContent = 'Create Account';
+      }
+    });
+
+    // Organization signup
+    document.getElementById('signupOrgForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        orgName: document.getElementById('orgName').value.trim(),
+        orgType: document.getElementById('orgType').value,
+        orgSize: document.getElementById('orgSize').value,
+        orgIndustry: document.getElementById('orgIndustry').value.trim(),
+        orgDescription: document.getElementById('orgDescription').value.trim(),
+        username: document.getElementById('orgAdminUsername').value.trim(),
+        contactEmail: document.getElementById('orgAdminEmail').value.trim(),
+        password: document.getElementById('orgAdminPassword').value,
+        fullName: document.getElementById('orgAdminFullName').value.trim(),
+        accountType: 'organization'
+      };
+
+      document.getElementById('signupOrgBtn').disabled = true;
+      document.getElementById('signupOrgBtn').textContent = 'Creating organization...';
+      document.getElementById('signupOrgError').innerHTML = '';
+
+      try {
+        await ipcRenderer.invoke('signup', data);
+        document.getElementById('signupOrgError').innerHTML =
+          `<div class="success">Organization created! Signing you in...</div>`;
+        setTimeout(() => showView('loginView'), 2000);
+      } catch (err) {
+        document.getElementById('signupOrgError').innerHTML =
+          `<div class="error">${err.message}</div>`;
+        document.getElementById('signupOrgBtn').disabled = false;
+        document.getElementById('signupOrgBtn').textContent = 'Create Organization';
+      }
+    });
+
+    // Forgot password
+    document.getElementById('forgotPasswordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('resetUsername').value.trim();
+
+      document.getElementById('resetBtn').disabled = true;
+      document.getElementById('resetBtn').textContent = 'Sending...';
+      document.getElementById('forgotPasswordMsg').innerHTML = '';
+
+      try {
+        await ipcRenderer.invoke('forgot-password', { username });
+        document.getElementById('forgotPasswordMsg').innerHTML =
+          `<div class="success">Reset link sent! Check your email.</div>`;
+        document.getElementById('resetBtn').textContent = 'Sent!';
+        setTimeout(() => showView('loginView'), 3000);
+      } catch (err) {
+        document.getElementById('forgotPasswordMsg').innerHTML =
+          `<div class="error">${err.message}</div>`;
+        document.getElementById('resetBtn').disabled = false;
+        document.getElementById('resetBtn').textContent = 'Send Reset Link';
+      }
+    });
+
+    // Join organization
+    document.getElementById('joinOrgForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        inviteCode: document.getElementById('inviteCode').value.trim(),
+        username: document.getElementById('joinUsername').value.trim(),
+        contactEmail: document.getElementById('joinEmail').value.trim(),
+        password: document.getElementById('joinPassword').value,
+        fullName: document.getElementById('joinFullName').value.trim()
+      };
+
+      document.getElementById('joinOrgBtn').disabled = true;
+      document.getElementById('joinOrgBtn').textContent = 'Joining...';
+      document.getElementById('joinOrgError').innerHTML = '';
+
+      try {
+        await ipcRenderer.invoke('join-organization', data);
+        document.getElementById('joinOrgError').innerHTML =
+          `<div class="success">Joined successfully! Signing you in...</div>`;
+        setTimeout(() => showView('loginView'), 2000);
+      } catch (err) {
+        document.getElementById('joinOrgError').innerHTML =
+          `<div class="error">${err.message}</div>`;
+        document.getElementById('joinOrgBtn').disabled = false;
+        document.getElementById('joinOrgBtn').textContent = 'Join Organization';
+      }
+    });
+  </script>
+</body>
+</html>

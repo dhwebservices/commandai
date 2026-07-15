@@ -1,10 +1,12 @@
 import { Body, Controller, Post } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import {
   SignupRequest,
   LoginRequest,
   VerifyEmailRequest,
   RequestPasswordResetRequest,
   ResetPasswordRequest,
+  JoinOrganizationRequest,
 } from "./auth.dto";
 import { AuthService } from "./auth.service";
 import { createSupabaseAdminClient, createSupabaseAnonClient } from "./supabase-admin.client";
@@ -24,11 +26,13 @@ export class AuthController {
   }
 
   @Post("signup")
+  @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 signups per hour
   async signup(@Body() body: unknown) {
     return this.authService.signup(SignupRequest.parse(body));
   }
 
   @Post("login")
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 logins per minute
   async login(@Body() body: unknown) {
     return this.authService.login(LoginRequest.parse(body));
   }
@@ -40,14 +44,21 @@ export class AuthController {
   }
 
   @Post("request-password-reset")
+  @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 requests per hour
   async requestPasswordReset(@Body() body: unknown) {
     const { username } = RequestPasswordResetRequest.parse(body);
     return this.authService.requestPasswordReset(username);
   }
 
   @Post("reset-password")
+  @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 resets per hour
   async resetPassword(@Body() body: unknown) {
     const { token, newPassword } = ResetPasswordRequest.parse(body);
     return this.authService.resetPassword(token, newPassword);
+  }
+
+  @Post("join-organization")
+  async joinOrganization(@Body() body: unknown) {
+    return this.authService.joinOrganization(JoinOrganizationRequest.parse(body));
   }
 }

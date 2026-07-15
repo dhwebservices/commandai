@@ -431,15 +431,29 @@ class ComandrApp {
     // Login
     ipcMain.handle("login", async (event, credentials: { username: string; password: string }) => {
       try {
+        // FIX: Add timeout to prevent indefinite hangs
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
         const response = await fetch(`${API_BASE}/v1/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(credentials),
+          signal: controller.signal,
         });
 
+        clearTimeout(timeout);
+
         if (!response.ok) {
-          const error = (await response.json()) as any;
-          throw new Error((error as any).message || "Login failed");
+          let errorMessage = "Login failed";
+          try {
+            const error = await response.json();
+            errorMessage = error.message || errorMessage;
+          } catch {
+            // Not JSON, use status text
+            errorMessage = response.statusText || errorMessage;
+          }
+          throw new Error(errorMessage);
         }
 
         const result = (await response.json()) as any;
@@ -469,7 +483,14 @@ class ComandrApp {
         });
         this.showWindow();
       } catch (error: any) {
-        throw new Error((error as any).message || "Login failed");
+        // FIX: Better error messages for network failures
+        if (error.name === 'AbortError') {
+          throw new Error("Cannot reach server. Check your internet connection.");
+        }
+        if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+          throw new Error("Server is unreachable. Please try again later.");
+        }
+        throw new Error(error.message || "Login failed");
       }
     });
 
@@ -1027,29 +1048,39 @@ class ComandrApp {
       return this.agent.getActiveRemoteSessions();
     });
 
-    // WebRTC signaling handlers
-    ipcMain.on("remote-signaling", async (event, message) => {
+    // FIX: Change from ipcMain.on to ipcMain.handle for error responses
+    ipcMain.handle("remote-signaling", async (event, message) => {
       console.log('[Main] Received signaling from renderer:', Object.keys(message));
 
-      // Translate renderer format to agent format
-      const agentMessage: any = {
-        sessionId: message.sessionId,
-      };
+      try {
+        // Translate renderer format to agent format
+        const agentMessage: any = {
+          sessionId: message.sessionId,
+        };
 
-      if (message.offer) {
-        agentMessage.offer = message.offer.sdp;
-      } else if (message.answer) {
-        agentMessage.answer = message.answer.sdp;
-      } else if (message.iceCandidate) {
-        agentMessage.iceCandidate = {
-          candidate: message.iceCandidate.candidate,
-          sdpMid: message.iceCandidate.sdpMid || '',
-          sdpMLineIndex: message.iceCandidate.sdpMLineIndex || 0,
+        if (message.offer) {
+          agentMessage.offer = message.offer.sdp;
+        } else if (message.answer) {
+          agentMessage.answer = message.answer.sdp;
+        } else if (message.iceCandidate) {
+          agentMessage.iceCandidate = {
+            candidate: message.iceCandidate.candidate,
+            sdpMid: message.iceCandidate.sdpMid || '',
+            sdpMLineIndex: message.iceCandidate.sdpMLineIndex || 0,
+          };
+        }
+
+        // Forward signaling message from renderer to agent
+        await this.agent.handleRemoteSignalingMessage(agentMessage);
+        return { success: true };
+
+      } catch (error) {
+        console.error('[Main] Signaling failed:', error);
+        return {
+          success: false,
+          error: (error as Error).message,
         };
       }
-
-      // Forward signaling message from renderer to agent
-      await this.agent.handleRemoteSignalingMessage(agentMessage);
     });
 
     ipcMain.on("remote-quality-change", async (event, data) => {
@@ -1106,8 +1137,17 @@ class ComandrApp {
     this.openSessionWindow(sessionId, '', 'target', 'Remote Session - Sharing');
   }
 
+  // FIX: Track which windows are being created to prevent double-create on rapid clicks
+  private creatingWindows = new Set<string>();
+
   // Generic method to open session window
   private openSessionWindow(sessionId: string, deviceId: string, role: string, title: string) {
+    // Check if already creating
+    if (this.creatingWindows.has(sessionId)) {
+      console.log(`[Main] Already creating window for session ${sessionId}`);
+      return;
+    }
+
     // Check if window already exists
     if (this.remoteSessionWindows.has(sessionId)) {
       const existingWindow = this.remoteSessionWindows.get(sessionId);
@@ -1116,6 +1156,8 @@ class ComandrApp {
         return;
       }
     }
+
+    this.creatingWindows.add(sessionId);
 
     // Create new remote session window
     const sessionWindow = new BrowserWindow({
@@ -1135,6 +1177,10 @@ class ComandrApp {
     // Load remote session HTML with query parameters
     const sessionUrl = `file://${path.join(__dirname, "remote-session.html")}?sessionId=${sessionId}&deviceId=${deviceId}&role=${role}`;
     sessionWindow.loadURL(sessionUrl);
+
+    // Store window and remove from "creating" set
+    this.remoteSessionWindows.set(sessionId, sessionWindow);
+    this.creatingWindows.delete(sessionId);
 
     // Setup signaling message forwarding from agent to window
     const signalHandler = (message: any) => {
@@ -1175,12 +1221,13 @@ class ComandrApp {
       }
     };
 
-    // Set the global signaling callback (handles all sessions)
-    this.agent.setRemoteSignalingCallback(signalHandler);
+    // FIX: Use per-session callback instead of global
+    this.agent.addRemoteSignalingCallback(sessionId, signalHandler);
 
     // Clean up on window close
     sessionWindow.on("closed", () => {
       this.remoteSessionWindows.delete(sessionId);
+      this.agent.removeRemoteSignalingCallback(sessionId);
 
       // End session if it's still active
       this.agent.executeIntent({
@@ -1387,34 +1434,71 @@ class ComandrApp {
     // Find the desktop-agent executable
     const agentPath = path.join(__dirname, '..', '..', 'desktop-agent', 'dist', 'index.js');
 
-    // Spawn the agent process
-    this.agentProcess = spawn('node', [agentPath, this.userId], {
-      env: {
-        ...process.env,
-        API_GATEWAY_URL: API_BASE,
-        TENANT_ID: this.userId,
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    // FIX: Check if file exists before spawning
+    const fs = require('fs');
+    if (!fs.existsSync(agentPath)) {
+      const error = `Agent binary not found at ${agentPath}`;
+      console.error('[Desktop Agent]', error);
+      dialog.showErrorBox(
+        'Comandr Agent Error',
+        `Cannot start background agent: ${error}`
+      );
+      return;
+    }
 
-    // Log agent output
-    this.agentProcess.stdout?.on('data', (data) => {
-      console.log('[Desktop Agent]', data.toString().trim());
-    });
+    try {
+      // Spawn the agent process
+      this.agentProcess = spawn('node', [agentPath, this.userId], {
+        env: {
+          ...process.env,
+          API_GATEWAY_URL: API_BASE,
+          TENANT_ID: this.userId,
+        },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
 
-    this.agentProcess.stderr?.on('data', (data) => {
-      console.error('[Desktop Agent Error]', data.toString().trim());
-    });
+      // FIX: Handle spawn errors BEFORE they crash
+      this.agentProcess.on('error', (error) => {
+        console.error('[Desktop Agent] Spawn error:', error);
+        dialog.showErrorBox(
+          'Comandr Agent Error',
+          `Failed to start background agent: ${error.message}`
+        );
+        this.agentProcess = null;
+      });
 
-    this.agentProcess.on('error', (error) => {
-      console.error('[Desktop Agent] Process error:', error);
-      this.agentProcess = null;
-    });
+      // Log agent output
+      this.agentProcess.stdout?.on('data', (data) => {
+        console.log('[Desktop Agent]', data.toString().trim());
+      });
 
-    this.agentProcess.on('exit', (code) => {
-      console.log('[Desktop Agent] Process exited with code:', code);
-      this.agentProcess = null;
-    });
+      this.agentProcess.stderr?.on('data', (data) => {
+        console.error('[Desktop Agent Error]', data.toString().trim());
+      });
+
+      // Monitor exit
+      this.agentProcess.on('exit', (code, signal) => {
+        console.log(`[Desktop Agent] Exited with code ${code}, signal ${signal}`);
+        this.agentProcess = null;
+
+        if (code !== 0 && code !== null) {
+          // Unexpected exit
+          dialog.showErrorBox(
+            'Comandr Agent Stopped',
+            `Background agent exited unexpectedly (code ${code})`
+          );
+        }
+      });
+
+      console.log('[Desktop Agent] Started with PID:', this.agentProcess.pid);
+
+    } catch (error: any) {
+      console.error('[Desktop Agent] Failed to start:', error);
+      dialog.showErrorBox(
+        'Comandr Agent Error',
+        `Cannot start background agent: ${error.message}`
+      );
+    }
   }
 
   private stopDesktopAgent() {

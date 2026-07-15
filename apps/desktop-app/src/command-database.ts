@@ -310,6 +310,15 @@ export const COMMAND_DATABASE: CommandPattern[] = [
   // ===== NETWORK OPERATIONS =====
   {
     patterns: [
+      "reset network settings", "reset network", "network reset", "reset networking",
+      "reset network configuration", "restore network settings", "reset wifi settings"
+    ],
+    capabilityId: "network.reset_settings",
+    extractParams: () => ({}),
+    description: "Reset network settings to defaults"
+  },
+  {
+    patterns: [
       "ping", "ping host", "check connection", "test connection"
     ],
     capabilityId: "network.ping",
@@ -451,6 +460,92 @@ export const COMMAND_DATABASE: CommandPattern[] = [
     capabilityId: "system.sleep",
     extractParams: () => ({}),
     description: "Put system to sleep"
+  },
+
+  // ===== STORAGE MANAGEMENT =====
+  {
+    patterns: [
+      "clean temporary files", "clean temp files", "delete temp files", "clear temp",
+      "clean cache", "clear cache files", "remove temp files"
+    ],
+    capabilityId: "system.storage.clean_temp",
+    extractParams: () => ({}),
+    description: "Clean temporary files"
+  },
+  {
+    patterns: [
+      "empty trash", "clear trash", "empty recycle bin", "empty bin",
+      "clear recycle bin", "delete trash"
+    ],
+    capabilityId: "system.storage.empty_trash",
+    extractParams: () => ({}),
+    description: "Empty trash"
+  },
+  {
+    patterns: [
+      "show large files", "find large files", "big files", "largest files",
+      "find big files", "show biggest files", "search large files"
+    ],
+    capabilityId: "system.storage.find_large_files",
+    extractParams: (input) => {
+      const pathMatch = input.match(/(?:in|at)\s+([~\/][\w\/\-\.]+)/i);
+      const sizeMatch = input.match(/(?:larger|bigger|over)\s+(\d+)\s*(mb|gb)?/i);
+      return {
+        path: pathMatch ? pathMatch[1] : "~",
+        minSize: sizeMatch ? parseInt(sizeMatch[1]) : 100
+      };
+    },
+    description: "Find large files"
+  },
+  {
+    patterns: [
+      "analyze disk usage", "analyze storage", "disk usage analysis", "storage analysis",
+      "what's using space", "where is space used", "disk space breakdown"
+    ],
+    capabilityId: "system.storage.analyze_usage",
+    extractParams: (input) => {
+      const pathMatch = input.match(/(?:in|at|of)\s+([~\/][\w\/\-\.]+)/i);
+      return { path: pathMatch ? pathMatch[1] : "~" };
+    },
+    description: "Analyze disk usage"
+  },
+
+  // ===== SECURITY =====
+  {
+    patterns: [
+      "enable firewall", "turn on firewall", "start firewall", "activate firewall",
+      "firewall on"
+    ],
+    capabilityId: "security.firewall.enable",
+    extractParams: () => ({}),
+    description: "Enable firewall"
+  },
+  {
+    patterns: [
+      "scan for malware", "malware scan", "virus scan", "security scan",
+      "scan system", "check for viruses", "check for malware"
+    ],
+    capabilityId: "security.scan.malware",
+    extractParams: () => ({}),
+    description: "Scan for malware"
+  },
+  {
+    patterns: [
+      "check for updates", "system updates", "check updates", "software updates",
+      "update check", "available updates"
+    ],
+    capabilityId: "system.updates.check",
+    extractParams: () => ({}),
+    description: "Check for system updates"
+  },
+  {
+    patterns: [
+      "view security logs", "show security logs", "security logs", "check security logs",
+      "auth logs", "authentication logs"
+    ],
+    capabilityId: "security.logs.view",
+    extractParams: () => ({}),
+    description: "View security logs"
   }
 ];
 
@@ -499,17 +594,32 @@ export function matchCommand(input: string): {
 }
 
 function calculateSimilarity(str1: string, str2: string): number {
-  const words1 = str1.split(/\s+/);
-  const words2 = str2.split(/\s+/);
+  const words1 = str1.split(/\s+/).filter(w => w.length > 2); // Ignore very short words
+  const words2 = str2.split(/\s+/).filter(w => w.length > 2);
+
+  if (words1.length === 0 || words2.length === 0) return 0;
 
   let matches = 0;
   for (const word1 of words1) {
-    if (words2.some(word2 => word2.includes(word1) || word1.includes(word2))) {
+    // Require at least 80% of the word to match, not just any substring
+    const minMatchLength = Math.ceil(word1.length * 0.8);
+    if (words2.some(word2 => {
+      // Check if words share a significant substring
+      if (word1.length < 4 && word2.length < 4) {
+        // For short words, require exact match
+        return word1 === word2;
+      }
+      // For longer words, require substantial overlap
+      return word2.includes(word1.slice(0, minMatchLength)) ||
+             word1.includes(word2.slice(0, Math.ceil(word2.length * 0.8)));
+    })) {
       matches++;
     }
   }
 
-  return matches / Math.max(words1.length, words2.length);
+  // Require at least 70% of words to match (stricter than before)
+  const ratio = matches / Math.max(words1.length, words2.length);
+  return ratio;
 }
 
 /**

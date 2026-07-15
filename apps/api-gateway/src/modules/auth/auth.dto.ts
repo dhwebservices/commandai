@@ -9,6 +9,14 @@ export const SignupRequest = z.object({
   username: z.string().regex(USERNAME_PATTERN, "3-32 chars: letters, numbers, _ or -"),
   contactEmail: z.string().email(),
   password: z.string().min(8, "Minimum 8 characters"),
+  fullName: z.string().optional(),
+  accountType: z.enum(["personal", "organization"]).optional().default("personal"),
+  // Organization fields (only used when accountType is "organization")
+  orgName: z.string().optional(),
+  orgType: z.enum(["business", "enterprise", "nonprofit", "education"]).optional(),
+  orgSize: z.enum(["1-10", "11-50", "51-200", "201-500", "501+"]).optional(),
+  orgIndustry: z.string().optional(),
+  orgDescription: z.string().optional(),
 });
 export type SignupRequest = z.infer<typeof SignupRequest>;
 
@@ -33,6 +41,15 @@ export const ResetPasswordRequest = z.object({
   newPassword: z.string().min(8, "Minimum 8 characters"),
 });
 export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequest>;
+
+export const JoinOrganizationRequest = z.object({
+  inviteCode: z.string().length(6, "Invitation code must be 6 characters"),
+  username: z.string().regex(USERNAME_PATTERN, "3-32 chars: letters, numbers, _ or -"),
+  contactEmail: z.string().email(),
+  password: z.string().min(8, "Minimum 8 characters"),
+  fullName: z.string().optional(),
+});
+export type JoinOrganizationRequest = z.infer<typeof JoinOrganizationRequest>;
 
 export function syntheticEmailFor(username: string): string {
   return `${username.toLowerCase()}@login.commandai.internal`;

@@ -3,6 +3,17 @@ import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
+// Shell escape utility to prevent command injection
+function shellEscape(arg: string): string {
+  if (process.platform === "win32") {
+    // Windows PowerShell escaping
+    return `'${arg.replace(/'/g, "''")}'`;
+  } else {
+    // Unix shell escaping (bash, zsh)
+    return `'${arg.replace(/'/g, "'\\''")}'`;
+  }
+}
+
 export class ProcessExecutor {
   private readonly platform = process.platform;
 
@@ -12,18 +23,33 @@ export class ProcessExecutor {
         return await this.listProcesses();
 
       case "process.get_info":
+        if (typeof parameters.pid !== 'number' || parameters.pid <= 0) {
+          throw new Error('process.get_info requires positive number parameter: pid');
+        }
         return await this.getProcessInfo(parameters.pid);
 
       case "process.kill":
+        if (typeof parameters.pid !== 'number' || parameters.pid <= 0) {
+          throw new Error('process.kill requires positive number parameter: pid');
+        }
         return await this.killProcess(parameters.pid, parameters.signal);
 
       case "process.start":
+        if (!parameters.command || typeof parameters.command !== 'string') {
+          throw new Error('process.start requires string parameter: command');
+        }
         return await this.startProcess(parameters.command, parameters.args);
 
       case "app.launch":
+        if (!parameters.name || typeof parameters.name !== 'string') {
+          throw new Error('app.launch requires string parameter: name');
+        }
         return await this.launchApp(parameters.name, parameters.args);
 
       case "app.quit":
+        if (!parameters.name || typeof parameters.name !== 'string') {
+          throw new Error('app.quit requires string parameter: name');
+        }
         return await this.quitApp(parameters.name);
 
       case "app.list":
@@ -91,31 +117,37 @@ export class ProcessExecutor {
   }
 
   private async launchApp(name: string, args?: string[]): Promise<any> {
+    const escapedName = shellEscape(name);
+    const escapedArgs = args ? args.map(arg => shellEscape(arg)).join(" ") : "";
+
     if (this.platform === "darwin") {
-      const command = `open -a "${name}" ${args ? args.join(" ") : ""}`;
+      const command = `open -a ${escapedName} ${escapedArgs}`;
       await execAsync(command);
       return { success: true, app: name };
     } else if (this.platform === "win32") {
-      const command = `start "" "${name}" ${args ? args.join(" ") : ""}`;
+      const command = `start "" ${escapedName} ${escapedArgs}`;
       await execAsync(command);
       return { success: true, app: name };
     } else {
       // Linux
-      const command = `${name} ${args ? args.join(" ") : ""} &`;
+      const command = `${escapedName} ${escapedArgs} &`;
       await execAsync(command);
       return { success: true, app: name };
     }
   }
 
   private async quitApp(name: string): Promise<any> {
+    const escapedName = shellEscape(name);
+
     if (this.platform === "darwin") {
-      await execAsync(`osascript -e 'quit app "${name}"'`);
+      await execAsync(`osascript -e 'quit app ${escapedName}'`);
       return { success: true, app: name };
     } else if (this.platform === "win32") {
-      await execAsync(`taskkill /IM "${name}.exe" /F`);
+      // For taskkill, we need to escape the .exe part too
+      await execAsync(`taskkill /IM ${escapedName}.exe /F`);
       return { success: true, app: name };
     } else {
-      await execAsync(`pkill -f "${name}"`);
+      await execAsync(`pkill -f ${escapedName}`);
       return { success: true, app: name };
     }
   }

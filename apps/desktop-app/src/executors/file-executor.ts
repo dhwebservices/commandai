@@ -1,12 +1,72 @@
 import { promises as fs } from "fs";
 import * as path from "path";
+import * as os from "os";
 import { exec } from "child_process";
 import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
+// FIX: Define allowed and blocked paths for security
+const ALLOWED_PATHS = [
+  os.homedir(),
+  path.join(os.homedir(), 'Desktop'),
+  path.join(os.homedir(), 'Documents'),
+  path.join(os.homedir(), 'Downloads'),
+  path.join(os.homedir(), 'Pictures'),
+];
+
+const BLOCKED_PATHS = [
+  '/etc',
+  '/System',
+  '/Windows',
+  '/boot',
+  '/usr/bin',
+  '/usr/sbin',
+  '/bin',
+  '/sbin',
+  'C:\\Windows\\System32',
+  'C:\\Windows\\SysWOW64',
+  'C:\\Program Files',
+  path.join(os.homedir(), '.ssh'),
+  path.join(os.homedir(), '.aws'),
+  path.join(os.homedir(), '.config'),
+];
+
 export class FileExecutor {
+  private validatePath(requestedPath: string): void {
+    const normalized = path.normalize(path.resolve(requestedPath));
+
+    // Check if blocked
+    const isBlocked = BLOCKED_PATHS.some(blocked =>
+      normalized.startsWith(path.normalize(path.resolve(blocked)))
+    );
+
+    if (isBlocked) {
+      throw new Error('Access denied: restricted system path');
+    }
+
+    // Check if in allowed paths
+    const isAllowed = ALLOWED_PATHS.some(allowed =>
+      normalized.startsWith(path.normalize(path.resolve(allowed)))
+    );
+
+    if (!isAllowed) {
+      throw new Error('Access denied: path must be within allowed directories (home, Desktop, Documents, Downloads, Pictures)');
+    }
+  }
+
   async execute(capabilityId: string, parameters: Record<string, any>): Promise<any> {
+    // Validate all paths before operations
+    if (parameters.path) {
+      this.validatePath(parameters.path);
+    }
+    if (parameters.source) {
+      this.validatePath(parameters.source);
+    }
+    if (parameters.destination) {
+      this.validatePath(parameters.destination);
+    }
+
     switch (capabilityId) {
       case "file.read":
         return await fs.readFile(parameters.path, "utf-8");

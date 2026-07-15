@@ -2,6 +2,8 @@
 
 import { DesktopAgent } from "./agent.js";
 import type { Intent, ActionResult } from "./agent.js";
+import os from "node:os";
+import { networkInterfaces } from "node:os";
 
 // Export for use as a library
 export { DesktopAgent };
@@ -9,6 +11,7 @@ export type { Intent, ActionResult };
 
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL || "http://localhost:3000";
 const POLL_INTERVAL = 5000; // Poll every 5 seconds
+const HEARTBEAT_INTERVAL = 15000; // Send heartbeat every 15 seconds
 
 class AgentRunner {
   private agent = new DesktopAgent();
@@ -16,6 +19,7 @@ class AgentRunner {
   private agentId: string;
   private accessToken?: string;
   private running = true;
+  private deviceRegistered = false;
 
   constructor(tenantId: string, agentId: string) {
     this.tenantId = tenantId;
@@ -29,6 +33,12 @@ class AgentRunner {
     console.log(`[AgentRunner] API Gateway: ${API_GATEWAY_URL}`);
     console.log("[AgentRunner] Supported capabilities:", this.agent.getCapabilities().length);
 
+    // Register device on startup
+    await this.registerDevice();
+
+    // Start heartbeat loop
+    this.startHeartbeatLoop();
+
     // Main loop: poll for intents and execute them
     while (this.running) {
       try {
@@ -39,6 +49,130 @@ class AgentRunner {
 
       await this.sleep(POLL_INTERVAL);
     }
+  }
+
+  private async registerDevice() {
+    try {
+      const deviceInfo = this.getDeviceInfo();
+
+      const response = await fetch(`${API_GATEWAY_URL}/v1/devices/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          agent_id: this.agentId,
+          tenant_id: this.tenantId,
+          hostname: deviceInfo.hostname,
+          os_type: deviceInfo.os_type,
+          os_version: deviceInfo.os_version,
+          primary_ip: deviceInfo.primary_ip,
+          capabilities: deviceInfo.capabilities,
+          device_metadata: deviceInfo.metadata,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to register device: ${response.status}`);
+      }
+
+      const result = await response.json();
+      this.deviceRegistered = true;
+      console.log("[AgentRunner] Device registered successfully:", result.device.id);
+    } catch (error: any) {
+      console.error("[AgentRunner] Failed to register device:", error.message);
+      // Don't fail startup if registration fails - will retry on next heartbeat
+    }
+  }
+
+  private startHeartbeatLoop() {
+    setInterval(async () => {
+      try {
+        await this.sendHeartbeat();
+      } catch (error: any) {
+        console.error("[AgentRunner] Heartbeat failed:", error.message);
+      }
+    }, HEARTBEAT_INTERVAL);
+  }
+
+  private async sendHeartbeat() {
+    const deviceInfo = this.getDeviceInfo();
+
+    const response = await fetch(`${API_GATEWAY_URL}/v1/devices/${this.agentId}/presence`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        status: "online",
+        last_known_ip: deviceInfo.primary_ip,
+      }),
+    });
+
+    if (!response.ok) {
+      // If device not found, try to register it
+      if (response.status === 404 && !this.deviceRegistered) {
+        await this.registerDevice();
+      } else {
+        throw new Error(`Heartbeat failed: ${response.status}`);
+      }
+    }
+  }
+
+  private getDeviceInfo() {
+    // Map process.platform to our OS types
+    const platformMap: Record<string, "macos" | "windows" | "linux"> = {
+      darwin: "macos",
+      win32: "windows",
+      linux: "linux",
+    };
+    const os_type = platformMap[process.platform] || "linux";
+
+    // Get primary IP address
+    const interfaces = networkInterfaces();
+    let primary_ip: string | undefined;
+
+    for (const name of Object.keys(interfaces)) {
+      const iface = interfaces[name];
+      if (!iface) continue;
+
+      for (const addr of iface) {
+        // Skip internal and non-IPv4 addresses
+        if (!addr.internal && addr.family === "IPv4") {
+          primary_ip = addr.address;
+          break;
+        }
+      }
+      if (primary_ip) break;
+    }
+
+    // Device capabilities (what features are available)
+    const capabilities = {
+      screenCapture: true,
+      audioCapture: os_type !== "linux", // Audio capture more complex on Linux
+      remoteControl: true,
+      fileTransfer: true,
+      terminal: true,
+    };
+
+    // Device metadata
+    const metadata = {
+      cpu: os.cpus()[0]?.model || "Unknown",
+      cpus: os.cpus().length,
+      totalMemory: Math.round(os.totalmem() / (1024 * 1024 * 1024)) + " GB",
+      platform: process.platform,
+      arch: process.arch,
+      nodeVersion: process.version,
+    };
+
+    return {
+      hostname: os.hostname(),
+      os_type,
+      os_version: os.release(),
+      primary_ip,
+      capabilities,
+      metadata,
+    };
   }
 
   private async pollAndExecute() {

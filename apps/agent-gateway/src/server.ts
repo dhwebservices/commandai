@@ -8,6 +8,7 @@ import { verifyAgentCertificate } from "./auth-interceptor";
 import { createClient } from "@supabase/supabase-js";
 import { AgentAuthRepository } from "./agent-auth.repository";
 import { EnrollmentService } from "./enrollment.service";
+import { signalingCoordinator } from "./signaling-coordinator";
 
 const PROTO_PATH = path.join(__dirname, "../../../packages/proto/agent/v1/agent.proto");
 
@@ -177,6 +178,103 @@ export function startServer() {
         });
       } catch (err) {
         logger.error({ peer, err }, "Rejecting StreamStatus — agent identity not verified");
+        call.emit("error", {
+          code: grpc.status.UNAUTHENTICATED,
+          message: (err as Error).message,
+        });
+        call.end();
+      }
+    },
+    // StreamRemoteSession: bidirectional WebRTC signaling for remote sessions
+    streamRemoteSession: async (call: grpc.ServerDuplexStream<unknown, unknown>) => {
+      const peer = call.getPeer();
+      try {
+        let agentIdentity: { agentId: string; tenantId: string };
+
+        if (!config.AGENT_GATEWAY_ALLOW_INSECURE) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const cert = (call as any).request.socket?.getPeerCertificate?.();
+          if (!cert || !cert.subject) {
+            throw new Error("No client certificate presented");
+          }
+          agentIdentity = await verifyAgentCertificate(cert);
+          logger.info({ agentId: agentIdentity.agentId, tenantId: agentIdentity.tenantId, peer }, "Agent authenticated for StreamRemoteSession");
+        } else {
+          throw new Error("Insecure mode has no identity to verify — refusing the stream.");
+        }
+
+        // Track which sessions this agent is participating in
+        const agentSessions = new Set<string>();
+
+        call.on("data", (message: any) => {
+          const { session_id, offer, answer, ice_candidate, disconnect } = message;
+
+          if (!session_id) {
+            logger.warn({ agentId: agentIdentity.agentId }, "Received message without session_id");
+            return;
+          }
+
+          const messageType = offer ? 'offer' : answer ? 'answer' : ice_candidate ? 'ice_candidate' : disconnect ? 'disconnect' : 'unknown';
+
+          logger.debug({
+            agentId: agentIdentity.agentId,
+            sessionId: session_id,
+            messageType
+          }, "Received WebRTC signaling message");
+
+          // Register participant on first message for this session
+          if (!agentSessions.has(session_id)) {
+            // Determine role: initiator sends offer first, target sends answer
+            const role = offer ? 'initiator' : 'target';
+            signalingCoordinator.registerParticipant(
+              session_id,
+              agentIdentity.agentId,
+              agentIdentity.tenantId,
+              call,
+              role
+            );
+            agentSessions.add(session_id);
+          }
+
+          // Handle disconnect message
+          if (disconnect) {
+            logger.info({ sessionId: session_id, agentId: agentIdentity.agentId, reason: disconnect.reason }, "Participant disconnecting from session");
+            signalingCoordinator.unregisterParticipant(session_id, agentIdentity.agentId);
+            agentSessions.delete(session_id);
+            return;
+          }
+
+          // Relay signaling message to the other participant
+          const relayed = signalingCoordinator.relaySignalingMessage(
+            session_id,
+            agentIdentity.agentId,
+            message
+          );
+
+          if (!relayed) {
+            logger.warn({ sessionId: session_id, agentId: agentIdentity.agentId, messageType }, "Failed to relay signaling message - other participant may not be connected yet");
+          }
+        });
+
+        call.on("end", () => {
+          logger.info({ agentId: agentIdentity.agentId, sessionCount: agentSessions.size }, "Agent disconnected from StreamRemoteSession");
+          // Unregister from all sessions
+          agentSessions.forEach(sessionId => {
+            signalingCoordinator.unregisterParticipant(sessionId, agentIdentity.agentId);
+          });
+          agentSessions.clear();
+          call.end();
+        });
+
+        call.on("error", (err) => {
+          logger.error({ agentId: agentIdentity.agentId, err }, "StreamRemoteSession error");
+          // Cleanup on error
+          agentSessions.forEach(sessionId => {
+            signalingCoordinator.unregisterParticipant(sessionId, agentIdentity.agentId);
+          });
+        });
+      } catch (err) {
+        logger.error({ peer, err }, "Rejecting StreamRemoteSession — agent identity not verified");
         call.emit("error", {
           code: grpc.status.UNAUTHENTICATED,
           message: (err as Error).message,

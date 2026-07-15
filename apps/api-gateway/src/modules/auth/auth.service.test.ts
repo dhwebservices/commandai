@@ -43,7 +43,7 @@ describe("AuthService.signup", () => {
     const service = new AuthService(admin as any, {} as any, mockEmail as any);
 
     await expect(
-      service.signup({ username: "alice", contactEmail: "alice@example.com", password: "password123" }),
+      service.signup({ username: "alice", contactEmail: "alice@example.com", password: "password123", accountType: "personal" }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -63,6 +63,7 @@ describe("AuthService.signup", () => {
       username: "bob",
       contactEmail: "bob@example.com",
       password: "password123",
+      accountType: "personal",
     });
 
     expect(result.userId).toBe("user-1");

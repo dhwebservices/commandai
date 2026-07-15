@@ -73,6 +73,13 @@ export class RemoteSessionsService {
   }
 
   /**
+   * Get device by ID (for tenant isolation check)
+   */
+  async getDeviceById(deviceId: string) {
+    return this.devicesService.getDeviceById(deviceId);
+  }
+
+  /**
    * Create a new remote session
    */
   async createSession(dto: CreateSessionDto): Promise<RemoteSession> {
@@ -80,6 +87,19 @@ export class RemoteSessionsService {
     const device = await this.devicesService.getDeviceById(dto.target_device_id);
     if (device.status === "offline") {
       throw new BadRequestException("Target device is offline");
+    }
+
+    // Check heartbeat recency (must be within last 30 seconds)
+    if (device.last_seen_at) {
+      const lastSeenAt = new Date(device.last_seen_at);
+      const now = new Date();
+      const secondsSinceLastSeen = (now.getTime() - lastSeenAt.getTime()) / 1000;
+
+      if (secondsSinceLastSeen > 30) {
+        throw new BadRequestException(
+          `Device is offline (last seen ${Math.floor(secondsSinceLastSeen)}s ago)`
+        );
+      }
     }
 
     const now = new Date().toISOString();
