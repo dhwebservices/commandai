@@ -4,30 +4,35 @@ This repo uses **Cloudflare Pages** for the web console deployment.
 
 ## Dashboard Configuration
 
-Go to: https://dash.cloudflare.com/pages
+Go to: https://dash.cloudflare.com/pages → Your Project → Settings → Builds & deployments
 
 ### Build Settings
 
-**Framework preset:** Vite
+**Framework preset:** None (custom)
 
 **Build command:**
 ```bash
-cd apps/web-console && pnpm install && pnpm run build
+./build-web-console.sh
 ```
 
 **Build output directory:**
 ```
-apps/web-console/dist
+dist
 ```
 
-**Root directory (optional):**
+**Root directory:**
 ```
-apps/web-console
+(leave empty - use repository root)
 ```
 
 **Install command:**
 ```bash
 pnpm install
+```
+
+**Node version:**
+```
+20
 ```
 
 ### Environment Variables
