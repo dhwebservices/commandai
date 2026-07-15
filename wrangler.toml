@@ -3,26 +3,5 @@ name = "comandr-web-console"
 pages_build_output_dir = "apps/web-console/dist"
 compatibility_date = "2024-09-23"
 
-[build]
-command = "cd apps/web-console && pnpm run build"
-
-# Note: API is deployed to Render, not Cloudflare Workers
-# (API is too large for Workers free tier)
-
-# Environment variables (set via: wrangler secret put VARIABLE_NAME)
-# SUPABASE_URL
-# SUPABASE_ANON_KEY
-# SUPABASE_SERVICE_ROLE_KEY
-# RESEND_API_KEY
-# RESEND_FROM_EMAIL
-# WEB_APP_URL
-
-# Cloudflare Workers has generous free tier:
-# - 100,000 requests/day
-# - 10ms CPU time per request
-# - Always online, globally distributed
-# Cost: $0/month for most apps!
-
-[observability]
-enabled = true
-head_sampling_rate = 1
+# Note: API is deployed to Render at https://comandr-api.onrender.com
+# Web console auto-deploys from main branch to Cloudflare Pages
